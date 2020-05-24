@@ -79,11 +79,10 @@ public class FindNewFeatures {
 	      
 	}
    
-
    
-   
+   //Searches for all the tickets of type 'New Feature' which have been resolved/closed 
    public List<Ticket> findTickets() throws JSONException, IOException{
-	 //Searches for all the tickets of type 'New Feature' which have been resolved/closed
+
 	   
 	   Integer j = 0;
 	   Integer i = 0;
@@ -118,6 +117,7 @@ public class FindNewFeatures {
    }
    
    
+   //Searches for all the commits in the github repository of the project
    public List<Commit> findCommits() throws JSONException, IOException{
 	   
 	   int page = 1;
@@ -166,8 +166,8 @@ public class FindNewFeatures {
    }
    
    
+   //Associating commits to tickets
    public static void sortCommits(List<Ticket> tickets, List<Commit> commits) {
-	   //Associating commits to tickets
 	   
 	   String message = null;
 	   
