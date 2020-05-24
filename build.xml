@@ -54,4 +54,9 @@
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>
+    <target name="GetReleaseInfo">
+        <java classname="milestones.milestone1.deliverable2.GetReleaseInfo" failonerror="true" fork="yes">
+            <classpath refid="ProgettoISW2.classpath"/>
+        </java>
+    </target>
 </project>

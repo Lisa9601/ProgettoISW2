@@ -215,9 +215,11 @@ public class FindNewFeatures {
 	   
 	   LOGGER.info("Searching for tickets ...");
 	   tickets = fd.findTickets();
+	   LOGGER.info(tickets.size()+" tickets found!");
 
 	   LOGGER.info("Searching for commits ...");
 	   commits = fd.findCommits();
+	   LOGGER.info(commits.size()+" commits found!");
 	   
 	   //Creating a new csv file with all the commits
 	   printer = new PrintStream(new File("commits.csv"));
