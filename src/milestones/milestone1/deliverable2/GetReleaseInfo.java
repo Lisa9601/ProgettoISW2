@@ -1,16 +1,19 @@
 package milestones.milestone1.deliverable2;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.logging.Logger;
 import java.util.Collections;
 import java.util.Comparator;
 import java.time.LocalDate;
@@ -18,21 +21,25 @@ import java.time.LocalDateTime;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import milestones.milestone1.deliverable1.FindNewFeatures;
+
 import org.json.JSONArray;
 
 
 public class GetReleaseInfo {
 	
-	public static HashMap<LocalDateTime, String> releaseNames;
-	public static HashMap<LocalDateTime, String> releaseID;
-	public static Integer numVersions;
-	private ArrayList<LocalDateTime> releases = null;
+	private HashMap<LocalDateTime, String> releaseNames = null;
+	private HashMap<LocalDateTime, String> releaseID = null;
+	private Integer numVersions = null;
+	private List<LocalDateTime> releases = null;
 	
+    private static final Logger LOGGER = Logger.getLogger(FindNewFeatures.class.getName());
 
 	public GetReleaseInfo() {
 
 		this.releases = new ArrayList<>();
-		   
+		
 	}
 	   
 	   
@@ -80,7 +87,7 @@ public class GetReleaseInfo {
 	   
 	   
 	   public void fillReleases(String projName) throws JSONException, IOException {
-		   //Fills the arraylist with releases dates and orders them
+		   //Fills the arraylist with releases dates
 		   //Ignores releases with missing dates   
 		   String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
 		   JSONObject json;
@@ -106,7 +113,7 @@ public class GetReleaseInfo {
 	   }
 	   
 	   
-	   public void orderByDate() {
+	   public void orderByDate(String projectName) {
 		   // order releases by date
 		   Collections.sort(releases, new Comparator<LocalDateTime>(){
 			   //@Override
@@ -118,38 +125,30 @@ public class GetReleaseInfo {
 		   if (releases.size() < 6)
 			   return;
 		   
-		   FileWriter fileWriter = null;
+		   PrintStream printer = null;
+		   
 		   try {
 			   
-			   fileWriter = null;
 			   //Name of CSV for output
-			   fileWriter = new FileWriter("versionInfo.csv");
-			   fileWriter.append("Index,Version ID,Version Name,Date");
-			   fileWriter.append("\n");
+			   String output = projectName + "versionInfo.csv";
+			   
+			   printer = new PrintStream(new File(output));
+		       printer.println("Index,Version ID,Version Name,Date");
+		       
 			   numVersions = releases.size();
 			   for (int i = 0; i < releases.size(); i++) {
-			   Integer index = i + 1;
-			   fileWriter.append(index.toString());
-			   fileWriter.append(",");
-			   fileWriter.append(releaseID.get(releases.get(i)));
-			   fileWriter.append(",");
-			   fileWriter.append(releaseNames.get(releases.get(i)));
-			   fileWriter.append(",");
-			   fileWriter.append(releases.get(i).toString());
-			   fileWriter.append("\n");
+				   Integer index = i + 1;
+				   printer.println(index.toString() + "," + releaseID.get(releases.get(i)) + "," + releaseNames.get(releases.get(i)) + "," + releases.get(i).toString());
+
 			   }
 
 		   } catch (Exception e) {
 			   System.out.println("Error in csv writer");
 			   e.printStackTrace();
 		   } finally {
-			   try {
-				   fileWriter.flush();
-				   fileWriter.close();
-			   } catch (IOException e) {
-				   System.out.println("Error while flushing/closing fileWriter !!!");
-				   e.printStackTrace();
-			   }
+			   
+			   printer.close();
+
 		   }
 	 
 		   return;
@@ -157,7 +156,6 @@ public class GetReleaseInfo {
 
 	   public static void main(String[] args) throws IOException, JSONException {
 	   
-	
 		   //Taking the configuration from config.json file
 		   BufferedReader reader = new BufferedReader(new FileReader ("config.json"));
 		   String config = readAll(reader);
@@ -169,8 +167,13 @@ public class GetReleaseInfo {
 		   
 		   GetReleaseInfo grf = new GetReleaseInfo();
 
+	       LOGGER.info("Searching release info for "+project+" ...");
+		   
 		   grf.fillReleases(project);
-		   grf.orderByDate();
+		   grf.orderByDate(project);
+		   
+		   
+	       LOGGER.info("DONE");
 
 	   }
 

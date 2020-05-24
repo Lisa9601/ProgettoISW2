@@ -199,6 +199,7 @@ public class FindNewFeatures {
 		List<Commit> commits = null;	//List of all the commits of the project
 		
 		PrintStream printer = null;
+		String output = null;
 		
 	   //Taking the configuration from config.json file
 	   BufferedReader reader = new BufferedReader(new FileReader ("config.json"));
@@ -222,8 +223,9 @@ public class FindNewFeatures {
 	   LOGGER.info(commits.size()+" commits found!");
 	   
 	   //Creating a new csv file with all the commits
-	   printer = new PrintStream(new File("commits.csv"));
-       printer.println("Date");
+	   output = project + "commits.csv";
+	   printer = new PrintStream(new File(output));
+       printer.println("Day,Month,Year");
 
        LocalDateTime cd = null;
        Commit c = null;
@@ -232,7 +234,7 @@ public class FindNewFeatures {
     	   c = commits.get(i);
     	   cd = c.getDate();
 
-    	   printer.println(cd.getDayOfMonth() + "/"+ cd.getMonthValue() +"/"+ cd.getYear());
+    	   printer.println(cd.getDayOfMonth() + ","+ cd.getMonthValue() +","+ cd.getYear());
        }
        
        printer.close();
@@ -240,21 +242,26 @@ public class FindNewFeatures {
 	   sortCommits(tickets,commits);
 	   
 	   //Creating a new csv file with all the tickets with at least one commit
-	   printer = new PrintStream(new File("tickets.csv"));
-       printer.println("Id,Date,Commits");
+	   output = project + "tickets.csv";
+	   printer = new PrintStream(new File(output));
+       printer.println("Id,Day,Month,Year,Commits");
 
        LocalDateTime d = null;
        Ticket t = null;
+       String date = null;
        
        for(int i=0;i<tickets.size();i++) {
     	   t = tickets.get(i);
     	   d = t.getResolutionDate();
     	   
     	   if(d == null) {
-    		   continue;
+    		   date = "null";
+    	   }
+    	   else {
+    		   date =  d.getDayOfMonth() + "/"+ d.getMonthValue() +"/"+ d.getYear();
     	   }
 
-    	   printer.println(t.getId() +","+ d.getDayOfMonth() + "/"+ d.getMonthValue() +"/"+ d.getYear() +","+ t.getCommitsNumber());
+    	   printer.println(t.getId() +","+ date +","+ t.getCommitsNumber());
        }
        
        printer.close();
