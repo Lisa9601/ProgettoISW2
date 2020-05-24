@@ -1,0 +1,7 @@
+{
+
+	"author":"author of the project",
+	"project":"name of the project you wish to analyze",
+	"token":"your github token"
+
+}
