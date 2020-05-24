@@ -49,4 +49,9 @@
         <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
         <antcall target="build"/>
     </target>
+    <target name="FindNewFeatures (2)">
+        <java classname="milestones.milestone1.deliverable1.FindNewFeatures" failonerror="true" fork="yes">
+            <classpath refid="ProgettoISW2.classpath"/>
+        </java>
+    </target>
 </project>
