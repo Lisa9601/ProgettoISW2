@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Collections;
-import java.util.Comparator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -51,7 +50,6 @@ public class GetReleaseInfo {
 		releaseNames.put(dateTime, name);
 		releaseID.put(dateTime, id);
 		
-		return;
 	}
 	
 	      
@@ -64,8 +62,8 @@ public class GetReleaseInfo {
 		json = jr.readJsonFromUrl(url);
 
 		JSONArray versions = json.getJSONArray("versions");
-		releaseNames = new HashMap<LocalDateTime, String>();
-		releaseID = new HashMap<LocalDateTime, String> ();
+		releaseNames = new HashMap<>();
+		releaseID = new HashMap<> ();
 		
 		for (int i = 0; i < versions.length(); i++ ) {
 			String name = "";
@@ -84,24 +82,17 @@ public class GetReleaseInfo {
 	   
 	public void orderByDate(String projectName) {
 		   // order releases by date
-		   Collections.sort(releases, new Comparator<LocalDateTime>(){
-			   //@Override
-			   public int compare(LocalDateTime o1, LocalDateTime o2) {
-				   return o1.compareTo(o2);
-			   }
-		   });
+		   Collections.sort(releases, (LocalDateTime o1, LocalDateTime o2) -> o1.compareTo(o2));
 		   
 		   if (releases.size() < 6)
 			   return;
 		   
-		   PrintStream printer = null;
+		   //Name of CSV for output
+		   String output = projectName + "versionInfo.csv";
 		   
-		   try {
+		   try(PrintStream printer = new PrintStream(new File(output))) {
 			   
-			   //Name of CSV for output
-			   String output = projectName + "versionInfo.csv";
 			   
-			   printer = new PrintStream(new File(output));
 		       printer.println("Index,Version ID,Version Name,Date");
 
 			   for (int i = 0; i < releases.size(); i++) {
@@ -112,12 +103,6 @@ public class GetReleaseInfo {
 
 		   } catch (Exception e) {
 	    	   LOGGER.log(Level.SEVERE,"Exception occured ",e);
-		   } finally {
-			   
-			   if(printer != null) {
-				   printer.close();
-			   }
-
 		   }
 	 
 	   }
@@ -137,7 +122,9 @@ public class GetReleaseInfo {
 		   
 		   GetReleaseInfo grf = new GetReleaseInfo(jr);
 
-	       LOGGER.info("Searching release info for "+project+" ...");
+		   String info = "Searching release info for " + project + " ...";
+		   
+	       LOGGER.info(info);
 		   
 		   grf.fillReleases(project);
 		   grf.orderByDate(project);
