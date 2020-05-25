@@ -3,13 +3,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +12,9 @@ import java.util.logging.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import milestones.milestone1.common.JSONReader;
+
 import org.json.JSONArray;
 
 public class FindNewFeatures {
@@ -25,59 +22,19 @@ public class FindNewFeatures {
 	private String author = null;			//Name of the author of the project
 	private String project = null;			//Name of the project to analyze
 	private String token = null;			//token for github authorization
+	private JSONReader jr = null;
 	
     private static final Logger LOGGER = Logger.getLogger(FindNewFeatures.class.getName());
     
     
-    public FindNewFeatures(String author, String project, String token) {
+    public FindNewFeatures(String author, String project, String token, JSONReader jr) {
     	
     	this.author = author;
     	this.project = project;
     	this.token = token;
+    	this.jr = jr;
     }
     
-    private static String readAll(Reader rd) throws IOException {
-    	StringBuilder sb = new StringBuilder();
-    	int cp;
-    	while ((cp = rd.read()) != -1) {
-    		sb.append((char) cp);
-    	}
-    	return sb.toString();
-    }
-
-   
-   public static JSONArray readJsonArrayFromUrl(String url, String token) throws IOException, JSONException {
-	   URL url2 = new URL(url);
-	   HttpURLConnection urlConnection = (HttpURLConnection)  url2.openConnection();
-	   
-	   //Setting the requirements to access the github api
-	   urlConnection.setRequestProperty("Accept", "application/vnd.github.cloak-preview");
-	   urlConnection.setRequestProperty("Authorization", "token "+token);
-
-	   BufferedReader rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8));
-	   String jsonText = readAll(rd);
-	   JSONArray json = new JSONArray(jsonText);
-	  
-	   urlConnection.disconnect();
-	   
-	   return json;
-      
-   }
-   
-   
-
-   public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-	      InputStream is = new URL(url).openStream();
-	      
-	      BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-	      String jsonText = readAll(rd);
-	      JSONObject json = new JSONObject(jsonText);
-	      
-	      is.close();
-	      
-	      return json;
-	      
-	}
    
    
    //Searches for all the tickets of type 'New Feature' which have been resolved/closed 
@@ -98,7 +55,7 @@ public class FindNewFeatures {
 	                + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,created&startAt="
 	                + i.toString() + "&maxResults=" + j.toString();
 	         
-	         JSONObject json = readJsonFromUrl(url);
+	         JSONObject json = jr.readJsonFromUrl(url);
 	         JSONArray issues = json.getJSONArray("issues");
 	         total = json.getInt("total");
 	         
@@ -128,7 +85,7 @@ public class FindNewFeatures {
 		   String url = "https://api.github.com/repos/"+this.author+"/"+this.project+"/commits?&per_page=100&page="+page;
 	       
 		   try{
-	    	   comm = readJsonArrayFromUrl(url,this.token);
+	    	   comm = jr.readJsonArrayFromUrl(url,this.token);
 	       }catch(Exception e) {
 	    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
 	    	   return commits;
@@ -197,13 +154,14 @@ public class FindNewFeatures {
 
 		List<Ticket> tickets = null;	//List of tickets from the project
 		List<Commit> commits = null;	//List of all the commits of the project
+		JSONReader jr = new JSONReader();
 		
 		PrintStream printer = null;
 		String output = null;
 		
 	   //Taking the configuration from config.json file
 	   BufferedReader reader = new BufferedReader(new FileReader ("config.json"));
-	   String config = readAll(reader);
+	   String config = jr.readAll(reader);
 	   JSONObject jsonConfig = new JSONObject(config);
 	   
 	   String author = jsonConfig.getString("author");
@@ -212,7 +170,7 @@ public class FindNewFeatures {
 	   
 	   reader.close();
 	   
-	   FindNewFeatures fd = new FindNewFeatures(author,project,token);
+	   FindNewFeatures fd = new FindNewFeatures(author,project,token,jr);
 	   
 	   LOGGER.info("Searching for tickets ...");
 	   tickets = fd.findTickets();
