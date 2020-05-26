@@ -50,12 +50,12 @@
         <antcall target="build"/>
     </target>
     <target name="FindNewFeatures (2)">
-        <java classname="milestones.milestone1.deliverable1.FindNewFeatures" failonerror="true" fork="yes">
+        <java classname="main.java.new_features.FindNewFeatures" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>
     <target name="GetReleaseInfo">
-        <java classname="milestones.milestone1.deliverable2.GetReleaseInfo" failonerror="true" fork="yes">
+        <java classname="main.java.release_info.GetReleaseInfo" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>

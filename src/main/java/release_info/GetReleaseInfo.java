@@ -1,4 +1,4 @@
-package milestones.milestone1.deliverable2;
+package main.java.release_info;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import milestones.milestone1.common.JSONReader;
+import main.java.json_reader.JSONReader;
 
 import org.json.JSONArray;
 

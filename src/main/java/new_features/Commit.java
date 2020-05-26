@@ -1,4 +1,4 @@
-package milestones.milestone1.deliverable1;
+package main.java.new_features;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

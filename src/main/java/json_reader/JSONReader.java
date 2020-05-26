@@ -1,4 +1,4 @@
-package milestones.milestone1.common;
+package main.java.json_reader;
 
 import java.io.BufferedReader;
 import java.io.IOException;

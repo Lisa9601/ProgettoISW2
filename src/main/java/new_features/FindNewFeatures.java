@@ -1,4 +1,4 @@
-package milestones.milestone1.deliverable1;
+package main.java.new_features;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import milestones.milestone1.common.JSONReader;
+import main.java.json_reader.JSONReader;
 
 import org.json.JSONArray;
 
@@ -183,7 +183,6 @@ public class FindNewFeatures {
 	   //Creating a new csv file with all the commits
 	   output = project + "commits.csv";
 	   printer = new PrintStream(new File(output));
-       printer.println("Day,Month,Year");
 
        LocalDateTime cd = null;
        Commit c = null;
@@ -192,7 +191,7 @@ public class FindNewFeatures {
     	   c = commits.get(i);
     	   cd = c.getDate();
 
-    	   printer.println(cd.getDayOfMonth() + ","+ cd.getMonthValue() +","+ cd.getYear());
+    	   printer.println(cd.getMonthValue() +"/"+ cd.getYear());
        }
        
        printer.close();
@@ -202,11 +201,12 @@ public class FindNewFeatures {
 	   //Creating a new csv file with all the tickets with at least one commit
 	   output = project + "tickets.csv";
 	   printer = new PrintStream(new File(output));
-       printer.println("Id,Day,Month,Year,Commits");
 
        LocalDateTime d = null;
        Ticket t = null;
        String date = null;
+       
+       printer.println("Id,Date,Num Commits");
        
        for(int i=0;i<tickets.size();i++) {
     	   t = tickets.get(i);
@@ -216,7 +216,7 @@ public class FindNewFeatures {
     		   date = "null";
     	   }
     	   else {
-    		   date =  d.getDayOfMonth() + "/"+ d.getMonthValue() +"/"+ d.getYear();
+    		   date = d.getMonthValue() +"/"+ d.getYear();
     	   }
 
     	   printer.println(t.getId() +","+ date +","+ t.getCommitsNumber());
