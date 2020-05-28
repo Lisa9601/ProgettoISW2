@@ -17,20 +17,22 @@ import main.java.json_reader.JSONReader;
 
 import org.json.JSONArray;
 
-public class FindNewFeatures {
+public class FindAttribute {
 	
 	private String author = null;			//Name of the author of the project
 	private String project = null;			//Name of the project to analyze
-	private String token = null;			//token for github authorization
+	private String attribute = null;		//Name of the attribute to search in the tickets
+	private String token = null;			//Token for github authorization
 	private JSONReader jr = null;
 	
-    private static final Logger LOGGER = Logger.getLogger(FindNewFeatures.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(FindAttribute.class.getName());
     
     
-    public FindNewFeatures(String author, String project, String token, JSONReader jr) {
+    public FindAttribute(String author, String project, String attribute, String token, JSONReader jr) {
     	
     	this.author = author;
     	this.project = project;
+    	this.attribute = attribute;
     	this.token = token;
     	this.jr = jr;
     }
@@ -51,7 +53,7 @@ public class FindNewFeatures {
 	         j = i + 1000;
 	         
 	         String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
-	                + this.project + "%22AND%22issueType%22=%22New%20Feature%22AND(%22status%22=%22closed%22OR"
+	                + this.project + "%22AND%22issueType%22=%22"+this.attribute+"%22AND(%22status%22=%22closed%22OR"
 	                + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,created&startAt="
 	                + i.toString() + "&maxResults=" + j.toString();
 	         
@@ -166,11 +168,12 @@ public class FindNewFeatures {
 	   
 	   String author = jsonConfig.getString("author");
 	   String project = jsonConfig.getString("project");
+	   String attribute = jsonConfig.getString("attribute");
 	   String token = jsonConfig.getString("token");
 	   
 	   reader.close();
 	   
-	   FindNewFeatures fd = new FindNewFeatures(author,project,token,jr);
+	   FindAttribute fd = new FindAttribute(author,project,attribute,token,jr);
 	   
 	   LOGGER.info("Searching for tickets ...");
 	   tickets = fd.findTickets();

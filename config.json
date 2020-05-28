@@ -2,6 +2,7 @@
 
 	"author":"author of the project",
 	"project":"name of the project you wish to analyze",
+	"attribute":"attribute of the project to search, e.g. 'Bug', 'Task' ... If the attribute has spaces replace them with '%20' like 'New%20Feature'",
 	"token":"your github token"
 
 }
