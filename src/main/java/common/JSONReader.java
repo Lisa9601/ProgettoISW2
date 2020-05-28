@@ -1,4 +1,4 @@
-package main.java.json_reader;
+package main.java.common;
 
 import java.io.BufferedReader;
 import java.io.IOException;

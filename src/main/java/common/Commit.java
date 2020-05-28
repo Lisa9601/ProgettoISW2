@@ -1,19 +1,29 @@
-package main.java.search_attribute;
+package main.java.common;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Commit {
 
+	private String sha;
 	private String message;
 	private LocalDateTime date;
 	private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); 
 	
-	public Commit(String message, String date){
+	public Commit(String sha, String message, String date){
 		
+		this.sha = sha;
 		this.message = message;
 		this.date =  LocalDateTime.parse(date,formatter);
 		
+	}
+
+	public String getSha() {
+		return sha;
+	}
+
+	public void setSha(String sha) {
+		this.sha = sha;
 	}
 
 	public String getMessage() {

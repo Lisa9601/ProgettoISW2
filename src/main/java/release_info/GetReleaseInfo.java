@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import main.java.json_reader.JSONReader;
+import main.java.common.JSONReader;
 
 import org.json.JSONArray;
 

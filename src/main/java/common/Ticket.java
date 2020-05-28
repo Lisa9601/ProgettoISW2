@@ -1,4 +1,4 @@
-package main.java.search_attribute;
+package main.java.common;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

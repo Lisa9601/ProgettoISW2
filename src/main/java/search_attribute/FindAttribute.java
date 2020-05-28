@@ -13,7 +13,9 @@ import java.util.logging.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import main.java.json_reader.JSONReader;
+import main.java.common.Commit;
+import main.java.common.JSONReader;
+import main.java.common.Ticket;
 
 import org.json.JSONArray;
 
@@ -102,7 +104,9 @@ public class FindAttribute {
 	       }
 	  
 		   for (i=0; i < total; i++) {
-		        	
+		       
+			   String sha = comm.getJSONObject(i).get("sha").toString();
+			   
 			   JSONObject commit = comm.getJSONObject(i).getJSONObject("commit");
 			   
 			   String message = commit.get("message").toString();
@@ -110,7 +114,7 @@ public class FindAttribute {
 			   
 			   String formattedDate = date.substring(0,10)+" "+date.substring(11,19);
 			   
-			   Commit c = new Commit(message,formattedDate);
+			   Commit c = new Commit(sha,message,formattedDate);
 			   
 			   commits.add(c);	//Adds the new commit to the list
 		            
