@@ -17,7 +17,6 @@
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
-                <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
@@ -49,13 +48,13 @@
         <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
         <antcall target="build"/>
     </target>
-    <target name="GetReleaseInfo">
-        <java classname="main.java.release_info.GetReleaseInfo" failonerror="true" fork="yes">
+    <target name="FindAttribute (2)">
+        <java classname="main.java.FindAttribute" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>
-    <target name="FindAttribute (2)">
-        <java classname="main.java.search_attribute.FindAttribute" failonerror="true" fork="yes">
+    <target name="GetReleaseInfo">
+        <java classname="main.java.GetReleaseInfo" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>

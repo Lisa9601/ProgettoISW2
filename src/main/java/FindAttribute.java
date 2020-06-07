@@ -1,4 +1,4 @@
-package main.java.search_attribute;
+package main.java;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -14,7 +14,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import main.java.common.Commit;
-import main.java.common.JSONReader;
 import main.java.common.Ticket;
 
 import org.json.JSONArray;
@@ -188,7 +187,7 @@ public class FindAttribute {
 	   LOGGER.info(commits.size()+" commits found!");
 	   
 	   //Creating a new csv file with all the commits
-	   output = project + "commits.csv";
+	   output = "results/" + project + "commits.csv";
 	   printer = new PrintStream(new File(output));
 
        LocalDateTime cd = null;
@@ -206,7 +205,7 @@ public class FindAttribute {
 	   sortCommits(tickets,commits);
 	   
 	   //Creating a new csv file with all the tickets with at least one commit
-	   output = project + "tickets.csv";
+	   output = "results/" + project + "tickets.csv";
 	   printer = new PrintStream(new File(output));
 
        LocalDateTime d = null;

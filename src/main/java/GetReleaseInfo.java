@@ -1,4 +1,4 @@
-package main.java.release_info;
+package main.java;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,9 +16,6 @@ import java.time.LocalDateTime;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import main.java.common.JSONReader;
-
 import org.json.JSONArray;
 
 
@@ -88,7 +85,7 @@ public class GetReleaseInfo {
 			   return;
 		   
 		   //Name of CSV for output
-		   String output = projectName + "versionInfo.csv";
+		   String output = "results/" + projectName + "versionInfo.csv";
 		   
 		   try(PrintStream printer = new PrintStream(new File(output))) {
 			   
