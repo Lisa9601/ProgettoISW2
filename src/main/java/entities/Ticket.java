@@ -1,6 +1,6 @@
-package main.java.common;
+package main.java.entities;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +8,7 @@ public class Ticket {
 
 	private String id;	
 	private List<Commit> commits;
-	private LocalDateTime resolutionDate = null;
+	private LocalDate resolutionDate = null;
 	
 	
 	public Ticket(String id) {
@@ -39,11 +39,11 @@ public class Ticket {
 		commits.add(c);
 	}
 	
-	public LocalDateTime getResolutionDate() {
+	public LocalDate getResolutionDate() {
 	
 		if(resolutionDate == null) {
 			
-			LocalDateTime temp = null;
+			LocalDate temp = null;
 
 			for(int i=0;i<commits.size();i++) {
 				

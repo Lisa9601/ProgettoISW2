@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -13,8 +13,9 @@ import java.util.logging.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import main.java.common.Commit;
-import main.java.common.Ticket;
+import main.java.entities.Commit;
+import main.java.entities.CommittedFile;
+import main.java.entities.Ticket;
 
 import org.json.JSONArray;
 
@@ -24,30 +25,27 @@ public class FindAttribute {
 	private String project = null;			//Name of the project to analyze
 	private String attribute = null;		//Name of the attribute to search in the tickets
 	private String token = null;			//Token for github authorization
-	private JSONReader jr = null;
 	
     private static final Logger LOGGER = Logger.getLogger(FindAttribute.class.getName());
     
     
-    public FindAttribute(String author, String project, String attribute, String token, JSONReader jr) {
+    public FindAttribute(String author, String project, String attribute, String token) {
     	
     	this.author = author;
     	this.project = project;
     	this.attribute = attribute;
     	this.token = token;
-    	this.jr = jr;
     }
     
    
-   
-   //Searches for all the tickets of type 'New Feature' which have been resolved/closed 
+   //Searches for all the tickets of type specified which have been resolved/closed 
    public List<Ticket> findTickets() throws JSONException, IOException{
 
-	   
 	   Integer j = 0;
 	   Integer i = 0;
 	   Integer total = 1;
 	   List<Ticket> tickets = new ArrayList<>();
+	   JSONReader jr = new JSONReader();
 	   
 	      do {
 	         //Only gets a max of 1000 at a time, so must do this multiple times if >1000
@@ -82,9 +80,12 @@ public class FindAttribute {
 	   
 	   int page = 1;
 	   JSONArray comm = null;
+	   Commit c = null;
 	   List<Commit> commits = new ArrayList<>();
+	   JSONReader jr = new JSONReader();
 	   
 	   while(true) {
+		   //Only 100 commits per page are shown
 		   String url = "https://api.github.com/repos/"+this.author+"/"+this.project+"/commits?&per_page=100&page="+page;
 	       
 		   try{
@@ -93,27 +94,24 @@ public class FindAttribute {
 	    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
 	    	   return commits;
 	       }
-	       
 		  
 	       Integer total = comm.length();
 	       int i;
 	       
 	       if(total == 0) {
-	    	   break;
+	    	   break;	//If no commits have been found exits the cycle
 	       }
 	  
 		   for (i=0; i < total; i++) {
 		       
-			   String sha = comm.getJSONObject(i).get("sha").toString();
-			   
-			   JSONObject commit = comm.getJSONObject(i).getJSONObject("commit");
-			   
+			   String sha = comm.getJSONObject(i).get("sha").toString();			   
+			   JSONObject commit = comm.getJSONObject(i).getJSONObject("commit");			   
 			   String message = commit.get("message").toString();
 			   String date = commit.getJSONObject("committer").get("date").toString();
+			   String author = commit.getJSONObject("author").get("name").toString();
+			   String formattedDate = date.substring(0,10);
 			   
-			   String formattedDate = date.substring(0,10)+" "+date.substring(11,19);
-			   
-			   Commit c = new Commit(sha,message,formattedDate);
+			   c = new Commit(sha,message,formattedDate,author);
 			   
 			   commits.add(c);	//Adds the new commit to the list
 		            
@@ -128,8 +126,8 @@ public class FindAttribute {
    }
    
    
-   //Associating commits to tickets
-   public static void sortCommits(List<Ticket> tickets, List<Commit> commits) {
+   //Matching commits to tickets
+   public void matchCommits(List<Ticket> tickets, List<Commit> commits) {
 	   
 	   String message = null;
 	   
@@ -145,12 +143,75 @@ public class FindAttribute {
 				   break;
 			   }
 			   
-		   }
-		   
+		   }	   
 		   
 	   }
 	   
-   }   
+   } 
+   
+   
+   //Searches info of the committed files for each commit
+   public void findCommittedFiles(List<Commit> commits) {
+	   
+	   JSONReader jr = new JSONReader();
+	   String sha = null;
+	   String url = null;
+	   Commit commit = null;
+	   JSONObject comm = null;
+	   
+	   for(int i=0; i< commits.size(); i++) {
+		   
+		   commit = commits.get(i);
+		   sha = commit.getSha();
+		   
+		   LOGGER.info("searching files for commit "+i+"/"+commits.size());	//Added to keep track of the number of commits processed
+		   
+		   url = "https://api.github.com/repos/"+this.author+"/"+this.project+"/commits/"+sha;
+
+		   try{
+	    	   comm = jr.readJsonFromUrl(url,this.token);
+	       }catch(Exception e) {
+	    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
+	    	   break;
+	       }
+		   
+		   JSONArray files = comm.getJSONArray("files");
+		   List<CommittedFile> fileList = new ArrayList<>();
+		   CommittedFile newFile = null;
+		   String filename = null;
+		   int additions = 0;
+		   int changes = 0;
+		   int size = 0;
+		   String content = null;
+		   
+		   for(int j=0; j<files.length(); j++) {
+			   
+			   filename = files.getJSONObject(j).get("filename").toString();
+			   additions = files.getJSONObject(j).getInt("additions");
+			   changes = files.getJSONObject(j).getInt("changes");
+			   
+			   url = files.getJSONObject(j).get("contents_url").toString();
+			   
+			   try{
+		    	   comm = jr.readJsonFromUrl(url,this.token);
+		       }catch(Exception e) {
+		    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
+		    	   break;
+		       }
+			   
+			   size = comm.getInt("size");
+			   content = comm.get("content").toString();
+			   
+			   newFile = new CommittedFile(filename,size,additions,changes,content);
+			   
+			   fileList.add(newFile);
+		   }
+		   
+		   commit.setFiles(fileList);
+		   
+	   }
+	   
+   }
    
    
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -176,7 +237,7 @@ public class FindAttribute {
 	   
 	   reader.close();
 	   
-	   FindAttribute fd = new FindAttribute(author,project,attribute,token,jr);
+	   FindAttribute fd = new FindAttribute(author,project,attribute,token);
 	   
 	   LOGGER.info("Searching for tickets ...");
 	   tickets = fd.findTickets();
@@ -190,7 +251,7 @@ public class FindAttribute {
 	   output = "results/" + project + "commits.csv";
 	   printer = new PrintStream(new File(output));
 
-       LocalDateTime cd = null;
+       LocalDate cd = null;
        Commit c = null;
        
        for(int i=0;i<commits.size();i++) {
@@ -202,13 +263,13 @@ public class FindAttribute {
        
        printer.close();
 	   
-	   sortCommits(tickets,commits);
+	   fd.matchCommits(tickets,commits);
 	   
 	   //Creating a new csv file with all the tickets with at least one commit
 	   output = "results/" + project + "tickets.csv";
 	   printer = new PrintStream(new File(output));
 
-       LocalDateTime d = null;
+       LocalDate d = null;
        Ticket t = null;
        String date = null;
        

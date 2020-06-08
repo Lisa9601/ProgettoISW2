@@ -26,36 +26,54 @@ public class JSONReader {
     }
 
    
-   public JSONArray readJsonArrayFromUrl(String url, String token) throws IOException, JSONException {
-	   URL url2 = new URL(url);
-	   HttpURLConnection urlConnection = (HttpURLConnection)  url2.openConnection();
-	   
-	   //Setting the requirements to access the github api
-	   urlConnection.setRequestProperty("Accept", "application/vnd.github.cloak-preview");
-	   urlConnection.setRequestProperty("Authorization", "token "+token);
+    public JSONArray readJsonArrayFromUrl(String url, String token) throws IOException, JSONException {
+    	URL url2 = new URL(url);
+    	HttpURLConnection urlConnection = (HttpURLConnection)  url2.openConnection();
+   
+    	//Setting the requirements to access the github api
+    	urlConnection.setRequestProperty("Accept", "application/vnd.github.cloak-preview");
+    	urlConnection.setRequestProperty("Authorization", "token "+token);
 
-	   BufferedReader rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8));
-	   String jsonText = readAll(rd);
-	   JSONArray json = new JSONArray(jsonText);
-	  
-	   urlConnection.disconnect();
-	   
-	   return json;
+    	BufferedReader rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8));
+    	String jsonText = readAll(rd);
+    	JSONArray json = new JSONArray(jsonText);
+  
+    	urlConnection.disconnect();
+   
+    	return json;
       
-   }
+    }
    
    
-   public JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-	      InputStream is = new URL(url).openStream();
+    public JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+    	InputStream is = new URL(url).openStream();
 	      
-	      BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-	      String jsonText = readAll(rd);
-	      JSONObject json = new JSONObject(jsonText);
+    	BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+    	String jsonText = readAll(rd);
+    	JSONObject json = new JSONObject(jsonText);
 	      
-	      is.close();
+    	is.close();
 	      
-	      return json;
+    	return json;
 	      
-	}
+    }
+    
+    public JSONObject readJsonFromUrl(String url, String token) throws IOException, JSONException {
+    	URL url2 = new URL(url);
+    	HttpURLConnection urlConnection = (HttpURLConnection)  url2.openConnection();
+   
+    	//Setting the requirements to access the github api
+    	urlConnection.setRequestProperty("Accept", "application/vnd.github.cloak-preview");
+    	urlConnection.setRequestProperty("Authorization", "token "+token);
+	      
+    	BufferedReader rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8));
+    	String jsonText = readAll(rd);
+    	JSONObject json = new JSONObject(jsonText);
+	      
+    	urlConnection.disconnect();
+	      
+    	return json;
+	      
+    }
 
 }

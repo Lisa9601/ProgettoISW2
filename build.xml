@@ -11,12 +11,13 @@
     <property name="source" value="1.8"/>
     <path id="ProgettoISW2.classpath">
         <pathelement location="bin"/>
-        <pathelement location="json-20190722.jar"/>
+        <pathelement location="lib/json-20190722.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
+                <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
@@ -55,6 +56,11 @@
     </target>
     <target name="GetReleaseInfo">
         <java classname="main.java.GetReleaseInfo" failonerror="true" fork="yes">
+            <classpath refid="ProgettoISW2.classpath"/>
+        </java>
+    </target>
+    <target name="GetMetrics">
+        <java classname="main.java.GetMetrics" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>
