@@ -16,21 +16,16 @@ import main.java.entities.Ticket;
 
 public class GetMetrics {
 
-	private String author = null;			//Name of the author of the project
-	private String project = null;			//Name of the project to analyze
-	private String attribute = null;		//Name of the attribute to search in the tickets
-	private String token = null;			//Token for github authorization
 	
-    private static final Logger LOGGER = Logger.getLogger(FindAttribute.class.getName());
+
+    private static Logger LOGGER;
 	
-	public GetMetrics(String author, String project, String attribute, String token) {
-		this.author = author;
-		this.project = project;
-		this.attribute = attribute;
-		this.token = token;
-	}
-	
-	
+    static {
+
+        System.setProperty("java.util.logging.config.file", "logging.properties");
+        LOGGER = Logger.getLogger(FindAttribute.class.getName());
+    }
+		
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------------------	
 	
@@ -55,7 +50,7 @@ public class GetMetrics {
 		reader.close();
 	   
 		//Searching for tickets and commits	
-		FindAttribute fa = new FindAttribute(author,project,attribute,token);
+		FindAttribute fa = new FindAttribute();
 		
 		String url = "https://api.github.com/repos/"+ author+"/"+project+"/tags";
    
@@ -72,15 +67,15 @@ public class GetMetrics {
 		
 		
 		LOGGER.info("Searching for tickets ...");
-		tickets = fa.findTickets();
+		tickets = fa.findTickets(project,attribute);
 		LOGGER.info(tickets.size()+" tickets found!");
 		
 		LOGGER.info("Searching for commits ...");
-		commits = fa.findCommits();
+		commits = fa.findCommits(author,project,token);
 		LOGGER.info(commits.size()+" commits found!");
 		
 		LOGGER.info("Searching for committed files ...");
-		fa.findCommittedFiles(commits);
+		fa.findCommittedFiles(author,project,token,commits);
 		LOGGER.info("DONE");
 		
 		LOGGER.info("Matching commits to tickets ...");

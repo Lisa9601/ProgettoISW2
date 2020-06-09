@@ -54,13 +54,13 @@
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>
-    <target name="GetReleaseInfo">
-        <java classname="main.java.GetReleaseInfo" failonerror="true" fork="yes">
+    <target name="GetMetrics">
+        <java classname="main.java.GetMetrics" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>
-    <target name="GetMetrics">
-        <java classname="main.java.GetMetrics" failonerror="true" fork="yes">
+    <target name="GetReleaseInfo">
+        <java classname="main.java.GetReleaseInfo" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>

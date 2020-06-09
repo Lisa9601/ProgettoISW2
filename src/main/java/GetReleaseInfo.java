@@ -2,6 +2,7 @@ package main.java;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,8 +29,15 @@ public class GetReleaseInfo {
 	private HashMap<LocalDateTime, String> releaseID = null;
 	private List<LocalDateTime> releases = null;
 	
-    private static final Logger LOGGER = Logger.getLogger(GetReleaseInfo.class.getName());
+    private static Logger LOGGER;
+	
+    static {
 
+        System.setProperty("java.util.logging.config.file", "logging.properties");
+        LOGGER = Logger.getLogger(FindAttribute.class.getName());
+    }
+    
+    
 	public GetReleaseInfo() {
 
 		this.releases = new ArrayList<>();
@@ -127,6 +135,29 @@ public class GetReleaseInfo {
 		return releases;
 	}
 	
+	
+	
+	//Writes the releases info in a csv file
+	public void writeReleases(String project, List<Release> releases) throws FileNotFoundException {
+		
+		Release r = null;
+		String output = "results/" + project + "versionInfo.csv";
+		   
+		PrintStream printer = new PrintStream(new File(output));
+			   
+		printer.println("Index,Version ID,Version Name,Date");
+
+		for (int i = 0; i < releases.size(); i++) {
+			Integer index = i + 1;
+			r = releases.get(i);
+			printer.println(index.toString() + "," + r.getId() + "," + r.getName() + "," + r.getReleaseDate());
+
+		}
+
+		printer.close();
+		
+	}
+	
 //------------------------------------------------------------------------------------------------------------------------------------------------------	
 
 	   public static void main(String[] args) throws IOException, JSONException {
@@ -151,27 +182,9 @@ public class GetReleaseInfo {
 	       LOGGER.info(info);
 		   
 		   List<Release> releases = grf.findReleases(author,project,token);
-		   Release r = null;
-	       
-		   //Name of CSV for output
-		   String output = "results/" + project + "versionInfo.csv";
 		   
-		   try(PrintStream printer = new PrintStream(new File(output))) {
-			   
-			   
-		       printer.println("Index,Version ID,Version Name,Date");
-
-			   for (int i = 0; i < releases.size(); i++) {
-				   Integer index = i + 1;
-				   r = releases.get(i);
-				   printer.println(index.toString() + "," + r.getId() + "," + r.getName() + "," + r.getReleaseDate());
-
-			   }
-
-		   } catch (Exception e) {
-	    	   LOGGER.log(Level.SEVERE,"Exception occured ",e);
-		   }
-		   
+		   //Creating a new csv file with all the releases
+		   grf.writeReleases(project,releases);
 		   
 	       LOGGER.info("DONE");
 
