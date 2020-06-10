@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,57 +17,55 @@ import org.json.JSONObject;
 
 import main.java.entities.Commit;
 import main.java.entities.CommittedFile;
+import main.java.entities.Release;
 import main.java.entities.Ticket;
 
 import org.json.JSONArray;
 
-public class FindAttribute {
+public class SearchInfo {
 	
-
-    //private static final Logger LOGGER = Logger.getLogger(FindAttribute.class.getName());
     private static Logger LOGGER;
 	
     static {
 
         System.setProperty("java.util.logging.config.file", "logging.properties");
-        LOGGER = Logger.getLogger(FindAttribute.class.getName());
+        LOGGER = Logger.getLogger(SearchInfo.class.getName());
     }
     
     
-   //Searches for all the tickets of type specified which have been resolved/closed 
-   public List<Ticket> findTickets(String project, String attribute) throws JSONException, IOException{
-
-	   Integer j = 0;
-	   Integer i = 0;
-	   Integer total = 1;
-	   List<Ticket> tickets = new ArrayList<>();	//Creates a new list of tickets
-	   JSONReader jr = new JSONReader();
+    //Searches for all the tickets of type specified which have been resolved/closed 
+    public List<Ticket> findTickets(String project, String attribute) throws JSONException, IOException{
+    	Integer j = 0;
+    	Integer i = 0;
+    	Integer total = 1;
+    	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of tickets
+    	JSONReader jr = new JSONReader();
 	   
-	      do {
-	         //Only gets a max of 1000 at a time, so must do this multiple times if >1000
-	         j = i + 1000;
-	         
-	         String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
-	                + project + "%22AND%22issueType%22=%22"+attribute+"%22AND(%22status%22=%22closed%22OR"
-	                + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,created&startAt="
-	                + i.toString() + "&maxResults=" + j.toString();
-	         
-	         JSONObject json = jr.readJsonFromUrl(url);
-	         JSONArray issues = json.getJSONArray("issues");
-	         total = json.getInt("total");
-	         
-	         for (; i < total && i < j; i++) {
-	        	 
-	        	 String key = issues.getJSONObject(i%1000).get("key").toString();
-	        	 
-	        	 Ticket t = new Ticket(key);
-	        	 tickets.add(t);	//Adds the new ticket to the list
-	            
-	         }
-	         
-	      } while (i < total);
-	      
-	      return tickets;
+    	do {
+    		//Only gets a max of 1000 at a time, so must do this multiple times if >1000
+    		j = i + 1000;
+         
+    		String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
+    				+ project + "%22AND%22issueType%22=%22"+attribute+"%22AND(%22status%22=%22closed%22OR"
+    				+ "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,created&startAt="
+    				+ i.toString() + "&maxResults=" + j.toString();
+         
+    		JSONObject json = jr.readJsonFromUrl(url);
+    		JSONArray issues = json.getJSONArray("issues");
+    		total = json.getInt("total");
+         
+    		for (; i < total && i < j; i++) {
+        	 
+    			String key = issues.getJSONObject(i%1000).get("key").toString();
+        	 
+    			Ticket t = new Ticket(key);
+    			tickets.add(t);	//Adds the new ticket to the list
+            
+    		}
+         
+    	} while (i < total);
+      
+    	return tickets;
    }
    
    
@@ -117,33 +116,49 @@ public class FindAttribute {
 		   		 
 	   }  
 
+	   Collections.sort(commits, (Commit o1, Commit o2) -> o1.getDate().compareTo(o2.getDate()));
+	   
 	   return commits;
 	   
    }
    
    
-   //Matches commits to tickets
-   public void matchCommits(List<Ticket> tickets, List<Commit> commits) {
+   //Searches for all realeases of the specified project
+   public List<Release> findReleases(String project) throws JSONException, IOException{
+		
+	   List<Release> releases = new ArrayList<>();
+		
+	   String url = "https://issues.apache.org/jira/rest/api/2/project/" + project;
+	   JSONReader jr = new JSONReader();
 	   
-	   String message = null;
-	   
-	   for(int i=0;i<commits.size();i++) {
-		   
-		   message = commits.get(i).getMessage();
-		   
-		   for(int j=0;j<tickets.size();j++) {
-			   
-			   if(message.contains(tickets.get(j).getId()+":") || message.contains(tickets.get(j).getId()+"]")) {	//If a ticket is found in the message that commit is added to the list
-				   
-				   tickets.get(j).addCommit(commits.get(i));
-				   break;
-			   }
-			   
-		   }	   
-		   
+	   JSONObject json = jr.readJsonFromUrl(url);
+	   JSONArray versions = json.getJSONArray("versions");
+		
+	   String date = null;
+	   String name = null;
+	   String id = null;
+	   Release r = null;
+		
+	   for (int i = 0; i < versions.length(); i++ ) {
+
+		   if(versions.getJSONObject(i).has("releaseDate")) {
+			   if (versions.getJSONObject(i).has("name"))
+				   name = versions.getJSONObject(i).get("name").toString();
+			   if (versions.getJSONObject(i).has("id"))
+				   id = versions.getJSONObject(i).get("id").toString();
+				
+			   date = versions.getJSONObject(i).get("releaseDate").toString();
+				
+			   r = new Release(date,name,id);
+				
+			   releases.add(r);
+		   }
 	   }
-	   
-   } 
+		
+	   Collections.sort(releases, (Release o1, Release o2) -> o1.getReleaseDate().compareTo(o2.getReleaseDate()));
+		
+	   return releases;
+   }
    
    
    //Searches info of the committed files for each commit
@@ -208,7 +223,32 @@ public class FindAttribute {
 	   }
 	   
    }
+
    
+   //Matches commits to tickets
+   public void matchCommits(List<Ticket> tickets, List<Commit> commits) {
+	   
+	   String message = null;
+	   
+	   for(int i=0;i<commits.size();i++) {
+		   
+		   message = commits.get(i).getMessage();
+		   
+		   for(int j=0;j<tickets.size();j++) {
+			   
+			   //If a ticket is found in the message that commit is added to the list
+			   if(message.contains(tickets.get(j).getId()+":") || message.contains(tickets.get(j).getId()+"]") || message.contains(tickets.get(j).getId()+" ") || message.contains(" "+tickets.get(j).getId())) {	
+				   
+				   	tickets.get(j).addCommit(commits.get(i));
+				   	break;
+			   }
+			   
+		   	}	   
+		   
+	   	}
+	   
+   } 
+   	
    
    //Writes the tickets info in a csv file
    public void writeTickets(String project, List<Ticket> tickets) throws FileNotFoundException {
@@ -262,13 +302,36 @@ public class FindAttribute {
 	   
    }
    
+   
+   //Writes the releases info in a csv file
+   public void writeReleases(String project, List<Release> releases) throws FileNotFoundException {
+		
+	   Release r = null;
+	   String output = "results/" + project + "versionInfo.csv";
+		   
+	   PrintStream printer = new PrintStream(new File(output));
+			   
+	   printer.println("Index,Version ID,Version Name,Date");
+	
+	   for (int i = 0; i < releases.size(); i++) {
+		   Integer index = i + 1;
+		   r = releases.get(i);
+		   printer.println(index.toString() + "," + r.getId() + "," + r.getName() + "," + r.getReleaseDate());
+	
+	   }
+	
+	   printer.close();
+		
+   }
+   
 //--------------------------------------------------------------------------------------------------------------------------------
   
    public static void main(String[] args) throws JSONException, IOException {
 
-		List<Ticket> tickets = null;	//List of tickets from the project
-		List<Commit> commits = null;	//List of all the commits of the project
-		JSONReader jr = new JSONReader();
+	   List<Release> releases = null; //List of releases of the project
+	   List<Ticket> tickets = null;	//List of tickets from the project
+	   List<Commit> commits = null;	//List of all the commits of the project
+	   JSONReader jr = new JSONReader();
 		
 	   //Taking the configuration from config.json file
 	   BufferedReader reader = new BufferedReader(new FileReader ("config.json"));
@@ -282,23 +345,30 @@ public class FindAttribute {
 	   
 	   reader.close();
 	   
-	   FindAttribute fa = new FindAttribute();
+	   SearchInfo search = new SearchInfo();
+	   
+	   LOGGER.info("Searching for releases ...");
+	   releases = search.findReleases(project);
+	   LOGGER.info(releases.size()+" releases found!");
 	   
 	   LOGGER.info("Searching for tickets ...");
-	   tickets = fa.findTickets(project,attribute);
+	   tickets = search.findTickets(project,attribute);
 	   LOGGER.info(tickets.size()+" tickets found!");
 
 	   LOGGER.info("Searching for commits ...");
-	   commits = fa.findCommits(author,project,token);
+	   commits = search.findCommits(author,project,token);
 	   LOGGER.info(commits.size()+" commits found!");
+	
+	   //Creating a new csv file with all the releases
+	   search.writeReleases(project,releases);	   
 	   
 	   //Creating a new csv file with all the commits
-	   fa.writeCommits(project,commits);
+	   search.writeCommits(project,commits);
 	   
-	   fa.matchCommits(tickets,commits);
+	   search.matchCommits(tickets,commits);
 	   
-	   //Creating a new csv file with all the tickets with at least one commit
-       fa.writeTickets(project,tickets);
+	   //Creating a new csv file with all the tickets with number of commits
+       search.writeTickets(project,tickets);
 	   
        LOGGER.info("DONE");
    }

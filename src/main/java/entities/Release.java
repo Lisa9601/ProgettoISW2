@@ -8,6 +8,7 @@ public class Release {
 	private LocalDate releaseDate;
 	private String name;
 	private String id;
+	
 	private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	
 	public Release(String releaseDate, String name, String id) {
@@ -36,8 +37,5 @@ public class Release {
 	public void setId(String id) {
 		this.id = id;
 	}
-	
-	
-	
 	
 }

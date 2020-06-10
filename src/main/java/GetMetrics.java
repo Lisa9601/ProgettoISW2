@@ -16,14 +16,12 @@ import main.java.entities.Ticket;
 
 public class GetMetrics {
 
-	
-
     private static Logger LOGGER;
 	
     static {
 
         System.setProperty("java.util.logging.config.file", "logging.properties");
-        LOGGER = Logger.getLogger(FindAttribute.class.getName());
+        LOGGER = Logger.getLogger(SearchInfo.class.getName());
     }
 		
 	
@@ -50,7 +48,7 @@ public class GetMetrics {
 		reader.close();
 	   
 		//Searching for tickets and commits	
-		FindAttribute fa = new FindAttribute();
+		SearchInfo search = new SearchInfo();
 		
 		String url = "https://api.github.com/repos/"+ author+"/"+project+"/tags";
    
@@ -67,19 +65,19 @@ public class GetMetrics {
 		
 		
 		LOGGER.info("Searching for tickets ...");
-		tickets = fa.findTickets(project,attribute);
+		tickets = search.findTickets(project,attribute);
 		LOGGER.info(tickets.size()+" tickets found!");
 		
 		LOGGER.info("Searching for commits ...");
-		commits = fa.findCommits(author,project,token);
+		commits = search.findCommits(author,project,token);
 		LOGGER.info(commits.size()+" commits found!");
 		
 		LOGGER.info("Searching for committed files ...");
-		fa.findCommittedFiles(author,project,token,commits);
+		search.findCommittedFiles(author,project,token,commits);
 		LOGGER.info("DONE");
 		
 		LOGGER.info("Matching commits to tickets ...");
-		fa.matchCommits(tickets,commits);
+		search.matchCommits(tickets,commits);
 		LOGGER.info("DONE");
 		
 		

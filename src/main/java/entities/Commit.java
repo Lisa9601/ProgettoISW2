@@ -11,6 +11,7 @@ public class Commit {
 	private LocalDate date;
 	private String author;
 	private List<CommittedFile> files = null;
+	
 	private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
 	
 	public Commit(String sha, String message, String date, String author){
