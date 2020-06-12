@@ -49,11 +49,6 @@
         <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
         <antcall target="build"/>
     </target>
-    <target name="GetMetrics">
-        <java classname="main.java.GetMetrics" failonerror="true" fork="yes">
-            <classpath refid="ProgettoISW2.classpath"/>
-        </java>
-    </target>
     <target name="GetReleaseInfo">
         <java classname="main.java.GetReleaseInfo" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
@@ -61,6 +56,11 @@
     </target>
     <target name="SearchInfo (2)">
         <java classname="main.java.SearchInfo" failonerror="true" fork="yes">
+            <classpath refid="ProgettoISW2.classpath"/>
+        </java>
+    </target>
+    <target name="GetData">
+        <java classname="main.java.GetData" failonerror="true" fork="yes">
             <classpath refid="ProgettoISW2.classpath"/>
         </java>
     </target>

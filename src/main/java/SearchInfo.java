@@ -1,13 +1,8 @@
 package main.java;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -63,7 +58,7 @@ public class SearchInfo {
     		}
          
     	} while (i < total);
-      
+
     	return tickets;
    }
    
@@ -160,24 +155,40 @@ public class SearchInfo {
    }
    
    
-   //Searches info of the committed files for each commit
-   public void findCommittedFiles(String author, String project, String token, List<Commit> commits) {
+   //Searches info of the committed files for a commit
+   public void findCommittedFiles(String author, String project, String token, Commit commit) {
 	   
 	   JSONReader jr = new JSONReader();
-	   String sha = null;
-	   String url = null;
-	   Commit commit = null;
 	   JSONObject comm = null;
+	      
+	   String sha = commit.getSha();
 	   
-	   for(int i=0; i< commits.size(); i++) {
+	   String url = "https://api.github.com/repos/"+author+"/"+project+"/commits/"+sha;
+	   
+	   try{
+    	   comm = jr.readJsonFromUrl(url,token);
+       }catch(Exception e) {
+    	   logger.severe(e.toString());
+    	   return;
+       }
+	   
+	   JSONArray files = comm.getJSONArray("files");
+	   List<CommittedFile> fileList = new ArrayList<>();
+	   CommittedFile newFile = null;
+	   String filename = null;
+	   int additions = 0;
+	   int changes = 0;
+	   int size = 0;
+	   String content = null;
+	   
+	   for(int j=0; j<files.length(); j++) {
 		   
-		   commit = commits.get(i);
-		   sha = commit.getSha();
+		   filename = files.getJSONObject(j).get("filename").toString();
+		   additions = files.getJSONObject(j).getInt("additions");
+		   changes = files.getJSONObject(j).getInt("changes");
+		   /*
+		   url = files.getJSONObject(j).get("contents_url").toString();
 		   
-		   logger.info("searching files for commit "+i+"/"+commits.size());	//Added to keep track of the number of commits processed
-		   
-		   url = "https://api.github.com/repos/"+author+"/"+project+"/commits/"+sha;
-
 		   try{
 	    	   comm = jr.readJsonFromUrl(url,token);
 	       }catch(Exception e) {
@@ -185,51 +196,25 @@ public class SearchInfo {
 	    	   break;
 	       }
 		   
-		   JSONArray files = comm.getJSONArray("files");
-		   List<CommittedFile> fileList = new ArrayList<>();
-		   CommittedFile newFile = null;
-		   String filename = null;
-		   int additions = 0;
-		   int changes = 0;
-		   int size = 0;
-		   String content = null;
+		   size = comm.getInt("size");
+		   content = comm.get("content").toString();
+		   */
+		   newFile = new CommittedFile(filename,size,additions,changes,content);
 		   
-		   for(int j=0; j<files.length(); j++) {
-			   
-			   filename = files.getJSONObject(j).get("filename").toString();
-			   additions = files.getJSONObject(j).getInt("additions");
-			   changes = files.getJSONObject(j).getInt("changes");
-			   
-			   url = files.getJSONObject(j).get("contents_url").toString();
-			   
-			   try{
-		    	   comm = jr.readJsonFromUrl(url,token);
-		       }catch(Exception e) {
-		    	   logger.severe(e.toString());
-		    	   break;
-		       }
-			   
-			   size = comm.getInt("size");
-			   content = comm.get("content").toString();
-			   
-			   newFile = new CommittedFile(filename,size,additions,changes,content);
-			   
-			   fileList.add(newFile);
-		   }
-		   
-		   commit.setFiles(fileList);
-		   
+		   fileList.add(newFile);
 	   }
 	   
+	   commit.setFiles(fileList);
+	   
    }
-
+   
    
    //Matches commits to tickets
    public void matchCommits(List<Ticket> tickets, List<Commit> commits) {
-	   
 	   String message = null;
+	   int i;
 	   
-	   for(int i=0;i<commits.size();i++) {
+	   for(i=0;i<commits.size();i++) {
 		   
 		   message = commits.get(i).getMessage();
 		   
@@ -242,134 +227,27 @@ public class SearchInfo {
 				   	break;
 			   }
 			   
-		   	}	   
+		   }	   
 		   
-	   	}
+	   }   
+	   
+	   Collections.sort(tickets, new Comparator<Ticket>(){
+	        //@Override
+	        public int compare(Ticket o1, Ticket o2) {
+	        	
+	        	if(o1.getResolutionDate() == null) {
+	                return (o2.getResolutionDate() == null) ? 0 : 1;
+	        	}
+	        	else if (o2.getResolutionDate() == null) {
+	        		return -1;
+	        	}
+	        	else {
+	                return o1.getResolutionDate().compareTo(o2.getResolutionDate());	
+	        	}
+	        }
+	     });
 	   
    } 
-   	
-   
-   //Writes the tickets info in a csv file
-   public void writeTickets(String project, List<Ticket> tickets) throws FileNotFoundException {
-	   
-       LocalDate d = null;
-       Ticket t = null;
-       String date = null;
-       
-	   String output = project + "tickets.csv";
-	   PrintStream printer = new PrintStream(new File(output));
-       
-       printer.println("Id,Date,Num Commits");
-       
-       for(int i=0;i<tickets.size();i++) {
-    	   t = tickets.get(i);
-    	   d = t.getResolutionDate();
-    	   
-    	   if(d == null) {
-    		   date = "null";
-    	   }
-    	   else {
-    		   date = d.getMonthValue() +"/"+ d.getYear();
-    	   }
 
-    	   printer.println(t.getId() +","+ date +","+ t.getCommitsNumber());
-       }
-       
-       printer.close();
-	   
-   }
-   
-   
-   //Writes the commits info in a csv file
-   public void writeCommits(String project, List<Commit> commits) throws FileNotFoundException {
-	   
-	   String output = project + "commits.csv";
-	   
-	   PrintStream printer = new PrintStream(new File(output));
-
-       LocalDate cd = null;
-       Commit c = null;
-       
-       for(int i=0;i<commits.size();i++) {
-    	   c = commits.get(i);
-    	   cd = c.getDate();
-
-    	   printer.println(cd.getMonthValue() +"/"+ cd.getYear());
-       }
-       
-       printer.close();
-	   
-   }
-   
-   
-   //Writes the releases info in a csv file
-   public void writeReleases(String project, List<Release> releases) throws FileNotFoundException {
-		
-	   Release r = null;
-	   String output = project + "versionInfo.csv";
-		   
-	   PrintStream printer = new PrintStream(new File(output));
-			   
-	   printer.println("Index,Version ID,Version Name,Date");
-	
-	   for (int i = 0; i < releases.size(); i++) {
-		   Integer index = i + 1;
-		   r = releases.get(i);
-		   printer.println(index.toString() + "," + r.getId() + "," + r.getName() + "," + r.getReleaseDate());
-	
-	   }
-	
-	   printer.close();
-		
-   }
-   
-//--------------------------------------------------------------------------------------------------------------------------------
-  
-   public static void main(String[] args) throws JSONException, IOException {
-
-	   List<Release> releases = null; //List of releases of the project
-	   List<Ticket> tickets = null;	//List of tickets from the project
-	   List<Commit> commits = null;	//List of all the commits of the project
-	   JSONReader jr = new JSONReader();
-		
-	   //Taking the configuration from config.json file
-	   BufferedReader reader = new BufferedReader(new FileReader ("config.json"));
-	   String config = jr.readAll(reader);
-	   JSONObject jsonConfig = new JSONObject(config);
-	   
-	   String author = jsonConfig.getString("author");
-	   String project = jsonConfig.getString("project");
-	   String attribute = jsonConfig.getString("attribute");
-	   String token = jsonConfig.getString("token");
-	   
-	   reader.close();
-	   
-	   SearchInfo search = new SearchInfo();
-	   
-	   logger.info("Searching for releases ...");
-	   releases = search.findReleases(project);
-	   logger.info(releases.size()+" releases found!");
-	   
-	   logger.info("Searching for tickets ...");
-	   tickets = search.findTickets(project,attribute);
-	   logger.info(tickets.size()+" tickets found!");
-
-	   logger.info("Searching for commits ...");
-	   commits = search.findCommits(author,project,token);
-	   logger.info(commits.size()+" commits found!");
-	
-	   //Creating a new csv file with all the releases
-	   search.writeReleases(project,releases);	   
-	   
-	   //Creating a new csv file with all the commits
-	   search.writeCommits(project,commits);
-	   
-	   search.matchCommits(tickets,commits);
-	   
-	   //Creating a new csv file with all the tickets with number of commits
-       search.writeTickets(project,tickets);
-	   
-       logger.info("DONE");
-   }
-	   
+   	   
 }
