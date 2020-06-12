@@ -23,7 +23,7 @@ public class Release {
 		return releaseDate;
 	}
 	public void setReleaseDate(String releaseDate) {
-		this.releaseDate = LocalDate.parse(releaseDate,formatter);;
+		this.releaseDate = LocalDate.parse(releaseDate,formatter);
 	}
 	public String getName() {
 		return name;

@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.json.JSONException;
@@ -24,12 +23,12 @@ import org.json.JSONArray;
 
 public class SearchInfo {
 	
-    private static Logger LOGGER;
+    private static Logger logger;
 	
     static {
 
         System.setProperty("java.util.logging.config.file", "logging.properties");
-        LOGGER = Logger.getLogger(SearchInfo.class.getName());
+        logger = Logger.getLogger(SearchInfo.class.getName());
     }
     
     
@@ -85,7 +84,7 @@ public class SearchInfo {
 		   try{
 	    	   comm = jr.readJsonArrayFromUrl(url,token);
 	       }catch(Exception e) {
-	    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
+	    	   logger.severe(e.toString());
 	    	   return commits;
 	       }
 		  
@@ -175,14 +174,14 @@ public class SearchInfo {
 		   commit = commits.get(i);
 		   sha = commit.getSha();
 		   
-		   LOGGER.info("searching files for commit "+i+"/"+commits.size());	//Added to keep track of the number of commits processed
+		   logger.info("searching files for commit "+i+"/"+commits.size());	//Added to keep track of the number of commits processed
 		   
 		   url = "https://api.github.com/repos/"+author+"/"+project+"/commits/"+sha;
 
 		   try{
 	    	   comm = jr.readJsonFromUrl(url,token);
 	       }catch(Exception e) {
-	    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
+	    	   logger.severe(e.toString());
 	    	   break;
 	       }
 		   
@@ -206,7 +205,7 @@ public class SearchInfo {
 			   try{
 		    	   comm = jr.readJsonFromUrl(url,token);
 		       }catch(Exception e) {
-		    	   LOGGER.log(Level.SEVERE,"Exception occur ",e);
+		    	   logger.severe(e.toString());
 		    	   break;
 		       }
 			   
@@ -257,7 +256,7 @@ public class SearchInfo {
        Ticket t = null;
        String date = null;
        
-	   String output = "results/" + project + "tickets.csv";
+	   String output = project + "tickets.csv";
 	   PrintStream printer = new PrintStream(new File(output));
        
        printer.println("Id,Date,Num Commits");
@@ -284,7 +283,7 @@ public class SearchInfo {
    //Writes the commits info in a csv file
    public void writeCommits(String project, List<Commit> commits) throws FileNotFoundException {
 	   
-	   String output = "results/" + project + "commits.csv";
+	   String output = project + "commits.csv";
 	   
 	   PrintStream printer = new PrintStream(new File(output));
 
@@ -307,7 +306,7 @@ public class SearchInfo {
    public void writeReleases(String project, List<Release> releases) throws FileNotFoundException {
 		
 	   Release r = null;
-	   String output = "results/" + project + "versionInfo.csv";
+	   String output = project + "versionInfo.csv";
 		   
 	   PrintStream printer = new PrintStream(new File(output));
 			   
@@ -347,17 +346,17 @@ public class SearchInfo {
 	   
 	   SearchInfo search = new SearchInfo();
 	   
-	   LOGGER.info("Searching for releases ...");
+	   logger.info("Searching for releases ...");
 	   releases = search.findReleases(project);
-	   LOGGER.info(releases.size()+" releases found!");
+	   logger.info(releases.size()+" releases found!");
 	   
-	   LOGGER.info("Searching for tickets ...");
+	   logger.info("Searching for tickets ...");
 	   tickets = search.findTickets(project,attribute);
-	   LOGGER.info(tickets.size()+" tickets found!");
+	   logger.info(tickets.size()+" tickets found!");
 
-	   LOGGER.info("Searching for commits ...");
+	   logger.info("Searching for commits ...");
 	   commits = search.findCommits(author,project,token);
-	   LOGGER.info(commits.size()+" commits found!");
+	   logger.info(commits.size()+" commits found!");
 	
 	   //Creating a new csv file with all the releases
 	   search.writeReleases(project,releases);	   
@@ -370,7 +369,7 @@ public class SearchInfo {
 	   //Creating a new csv file with all the tickets with number of commits
        search.writeTickets(project,tickets);
 	   
-       LOGGER.info("DONE");
+       logger.info("DONE");
    }
 	   
 }

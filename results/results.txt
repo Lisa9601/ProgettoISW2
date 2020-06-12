@@ -1,3 +1,0 @@
-In this folder you can find the output results from the classes:
-	FindAttribute.java 
-	GetReleaseInfo.java
