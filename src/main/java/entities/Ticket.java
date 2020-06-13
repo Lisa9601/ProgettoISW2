@@ -7,14 +7,16 @@ import java.util.List;
 public class Ticket {
 
 	private String id;	
-	private List<Commit> commits;
+	private List<Commit> commits = null;
 	private LocalDate resolutionDate = null;
+	private List<String> affected = null;
 	
 	
-	public Ticket(String id) {
+	public Ticket(String id, List<String> affected) {
 
 		this.id = id;
-		this.commits = new ArrayList<>();
+		this.affected = affected;
+		commits = new ArrayList<>();
 		
 	}
 
@@ -63,6 +65,14 @@ public class Ticket {
 	public int getCommitsNumber() {
 		
 		return commits.size();
+	}
+
+	public List<String> getAffected() {
+		return affected;
+	}
+
+	public void setAffected(List<String> affected) {
+		this.affected = affected;
 	}
 	
 }

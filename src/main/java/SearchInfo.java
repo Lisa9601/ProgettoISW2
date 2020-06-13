@@ -1,6 +1,8 @@
 package main.java;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,8 +33,12 @@ public class SearchInfo {
     public List<Ticket> findTickets(String project, String attribute) throws JSONException, IOException{
     	Integer j = 0;
     	Integer i = 0;
+    	Integer k = 0;
     	Integer total = 1;
-    	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of tickets
+    	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of ticket
+		List<String> versions = null;
+		JSONArray array = null;
+		
     	JSONReader jr = new JSONReader();
 	   
     	do {
@@ -41,7 +47,7 @@ public class SearchInfo {
          
     		String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
     				+ project + "%22AND%22issueType%22=%22"+attribute+"%22AND(%22status%22=%22closed%22OR"
-    				+ "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,created&startAt="
+    				+ "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,fixVersions,created&startAt="
     				+ i.toString() + "&maxResults=" + j.toString();
          
     		JSONObject json = jr.readJsonFromUrl(url);
@@ -51,8 +57,25 @@ public class SearchInfo {
     		for (; i < total && i < j; i++) {
         	 
     			String key = issues.getJSONObject(i%1000).get("key").toString();
+    			
+    			versions = new ArrayList<>();
+    			
+    			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("fixVersions");
+    			
+    			//If there's a fix versions it's added to the list for that ticket
+    			for(k=0; k < array.length(); k++) {
+    				versions.add(array.getJSONObject(k).get("name").toString());
+    			}
         	 
-    			Ticket t = new Ticket(key);
+    			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("versions");
+    			
+    			for(k=0; k<array.length(); k++) {		
+    				if(!versions.contains(array.getJSONObject(k).get("name").toString())) {
+    					versions.add(array.getJSONObject(k).get("name").toString());
+    				} 				
+    			}
+    			
+    			Ticket t = new Ticket(key,versions);
     			tickets.add(t);	//Adds the new ticket to the list
             
     		}
@@ -156,24 +179,25 @@ public class SearchInfo {
    
    
    //Searches info of the committed files for a commit
-   public void findCommittedFiles(String author, String project, String token, Commit commit) {
+   public List<CommittedFile> findCommittedFiles(String author, String project, String token, Commit commit) throws UnsupportedEncodingException {
 	   
-	   JSONReader jr = new JSONReader();
-	   JSONObject comm = null;
-	      
+	   List<CommittedFile> fileList = null;
+	   JSONObject comm = null; 
 	   String sha = commit.getSha();
 	   
 	   String url = "https://api.github.com/repos/"+author+"/"+project+"/commits/"+sha;
+	   
+	   JSONReader jr = new JSONReader();
 	   
 	   try{
     	   comm = jr.readJsonFromUrl(url,token);
        }catch(Exception e) {
     	   logger.severe(e.toString());
-    	   return;
+    	   return fileList;
        }
 	   
 	   JSONArray files = comm.getJSONArray("files");
-	   List<CommittedFile> fileList = new ArrayList<>();
+	   fileList = new ArrayList<>();
 	   CommittedFile newFile = null;
 	   String filename = null;
 	   int additions = 0;
@@ -184,9 +208,15 @@ public class SearchInfo {
 	   for(int j=0; j<files.length(); j++) {
 		   
 		   filename = files.getJSONObject(j).get("filename").toString();
+		   
+		   //We only want java files
+		   if(!filename.contains(".java")) {
+			   continue;
+		   }
+		   
 		   additions = files.getJSONObject(j).getInt("additions");
-		   changes = files.getJSONObject(j).getInt("changes");
-		   /*
+		   changes = files.getJSONObject(j).getInt("changes"); 
+		   
 		   url = files.getJSONObject(j).get("contents_url").toString();
 		   
 		   try{
@@ -196,16 +226,20 @@ public class SearchInfo {
 	    	   break;
 	       }
 		   
-		   size = comm.getInt("size");
 		   content = comm.get("content").toString();
-		   */
+		   
+		   byte[] byteArray = Base64.getMimeDecoder().decode(content);
+		   content = new String(byteArray, "UTF-8") + "\n";
+		   
+		   
 		   newFile = new CommittedFile(filename,size,additions,changes,content);
+		   
+		   System.out.println(newFile.getName());
 		   
 		   fileList.add(newFile);
 	   }
 	   
-	   commit.setFiles(fileList);
-	   
+	   return fileList; 
    }
    
    

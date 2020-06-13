@@ -1,5 +1,6 @@
 package main.java.entities;
 
+
 public class CommittedFile {
 
 	private String name;

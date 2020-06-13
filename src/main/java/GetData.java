@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -14,6 +15,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import main.java.entities.Commit;
+import main.java.entities.CommittedFile;
+import main.java.entities.Record;
 import main.java.entities.Release;
 import main.java.entities.Ticket;
 
@@ -27,6 +30,41 @@ public class GetData {
         logger = Logger.getLogger(SearchInfo.class.getName());
     }
 	    	
+    
+    //Returns the number of LOC in a file
+    public int getLOC(CommittedFile file) {
+    	
+    	int loc = 0;
+    	String content = file.getContent();
+    	
+    	String[] lines = content.split("\n");
+    	loc = lines.length;
+    	
+    	String line = null;
+    	
+    	for(int i=0; i<lines.length; i++) {
+    		
+    		line = lines[i];
+    		
+    		if(line.contains("//")) {   			
+    			loc--;
+    		}
+    		else if(line.contains("/*")) {
+    			do {
+    				loc--;
+    				i++;
+    				line = lines[i];
+    				
+    			}
+    			while(!line.contains("*/"));
+    			
+    		}
+    		
+    	}
+    	
+    	return loc;
+    }
+    
     
     //Writes the tickets info in a csv file
     public void writeTickets(String project, List<Ticket> tickets) throws FileNotFoundException {
@@ -103,6 +141,27 @@ public class GetData {
     }
     
     
+    //Writes dataset in a csv file
+    public void writeRecords(String project, List<Record> records) throws FileNotFoundException {
+    
+    	Record r = null;
+    	String output = project + "dataset.csv";
+    	
+    	PrintStream printer = new PrintStream(new File(output));
+    	
+    	printer.println("Release,File,Size,LocTouched,LocAdded,MaxLocAdded,AvgLocAdded,Nauth,Nfix,Nr,ChgSetSize");
+	   		
+    	for (int i = 0; i < records.size(); i++) {
+	   		r = records.get(i);
+	   		printer.println(r.getRelease()+","+r.getFile()+","+r.getSize()+","+r.getLocTouched()+","+r.getLocAdded()+","+
+	   		r.getMaxLocAdded()+","+r.getAvgLocAdded()+","+r.getNauth()+","+r.getNfix()+","+r.getNr()+","+r.getChgSetSize());
+    	}
+    	
+    	printer.close();
+    	
+    }
+    
+    
     //Creates a new csv file with all the data on the project
     public void createDataset(String author, String project, String attribute, String token) throws JSONException, IOException {
 		
@@ -139,6 +198,8 @@ public class GetData {
 		int releaseNum = releases.size()/2;
 		LocalDate maxDate = null;
 		Commit commit = null;
+		List<CommittedFile> fileList = null;
+		CommittedFile file = null;
 		int counter = 0;
 
 		for(int i=0; i<releaseNum; i++) {
@@ -157,11 +218,16 @@ public class GetData {
 				
 				logger.info("Searching files for commit "+counter+" ...");
 				
-				search.findCommittedFiles(author,project,token,commit);
+				fileList = search.findCommittedFiles(author,project,token,commit);
+				
+				System.out.println(fileList.get(0).getContent());
+				
+				System.out.println(getLOC(fileList.get(0)));
 				
 				commits.remove(0);
 			}
 			
+		
 		}
 		
 		logger.info("DONE");

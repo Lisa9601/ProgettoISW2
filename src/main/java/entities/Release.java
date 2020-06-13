@@ -36,6 +36,6 @@ public class Release {
 	}
 	public void setId(String id) {
 		this.id = id;
-	}
+	}	
 	
 }
