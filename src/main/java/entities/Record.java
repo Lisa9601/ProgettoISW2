@@ -1,34 +1,36 @@
 package main.java.entities;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Record {
 
-	private int release;
-	private String file;
-	private int size;
-	private int locTouched;
-	private int locAdded;
-	private int maxLocAdded;
-	private int AvgLocAdded;
-	private int nauth;
-	private int nfix;
-	private int nr;
-	private int chgSetSize;
+	private int release;			//release number
+	private String file;			//file name
+	private int size;				//loc
+	private int locTouched;			//loc touched
+	private int locAdded;			//loc added
+	private int maxLocAdded;		//maximum loc added
+	private List<String> authors;	//list of authors of the file
+	private int nfix;				//number of fix
+	private int nr;					//number of revisions
+	private int chgSetSize;			//change set size
+	private String buggy;			//bugginess
 	
 	
-	public Record(int release, String file, int size, int locTouched, int locAdded, int maxLocAdded, int avgLocAdded,
-			int nauth, int nfix, int nr, int chgSetSize) {
+	public Record(int release, String file) {
 
 		this.release = release;
 		this.file = file;
-		this.size = size;
-		this.locTouched = locTouched;
-		this.locAdded = locAdded;
-		this.maxLocAdded = maxLocAdded;
-		AvgLocAdded = avgLocAdded;
-		this.nauth = nauth;
-		this.nfix = nfix;
-		this.nr = nr;
-		this.chgSetSize = chgSetSize;
+		this.size = 0;
+		this.locTouched = 0;
+		this.locAdded = 0;
+		this.maxLocAdded = 0;
+		this.authors = new ArrayList<>();
+		this.nfix = 0;
+		this.nr = 0;
+		this.chgSetSize = 0;
+		this.buggy = "No";
 	}
 	
 
@@ -70,6 +72,12 @@ public class Record {
 	public void setLocTouched(int locTouched) {
 		this.locTouched = locTouched;
 	}
+	
+	
+	//Adds loc to the number of loc touched
+	public void addLocTouched(int loc) {
+		this.locTouched += loc;
+	}
 
 
 	public int getLocAdded() {
@@ -81,6 +89,18 @@ public class Record {
 		this.locAdded = locAdded;
 	}
 
+	
+	//Adds loc to the number of loc added
+	public void addLocAdded(int loc) {
+		this.locAdded += loc;
+		
+		//Updates the value of the max loc added
+		if(this.maxLocAdded < loc) {
+			this.maxLocAdded = loc;
+		}
+		
+	}
+	
 
 	public int getMaxLocAdded() {
 		return maxLocAdded;
@@ -92,25 +112,37 @@ public class Record {
 	}
 
 
+	//Returns the average number of loc added
 	public int getAvgLocAdded() {
-		return AvgLocAdded;
+		return this.locAdded/this.nr;
+	}
+	
+
+	public List<String> getAuthors() {
+		return authors;
 	}
 
 
-	public void setAvgLocAdded(int avgLocAdded) {
-		AvgLocAdded = avgLocAdded;
+	public void setAuthors(List<String> authors) {
+		this.authors = authors;
 	}
 
+	
+	//Adds an author to the list
+	public void addAuthor(String author) {
 
+		if(!this.authors.contains(author)) {
+			this.authors.add(author);
+		}
+		
+	}
+	
+
+	//Returns the number of authors for that file
 	public int getNauth() {
-		return nauth;
+		return authors.size();
 	}
-
-
-	public void setNauth(int nauth) {
-		this.nauth = nauth;
-	}
-
+	
 
 	public int getNfix() {
 		return nfix;
@@ -119,6 +151,12 @@ public class Record {
 
 	public void setNfix(int nfix) {
 		this.nfix = nfix;
+	}
+	
+	
+	//Adds a fix
+	public void addFix() {
+		this.nfix++;
 	}
 
 
@@ -130,6 +168,12 @@ public class Record {
 	public void setNr(int nr) {
 		this.nr = nr;
 	}
+	
+	
+	//Adds a revision
+	public void addRevision() {
+		this.nr++;
+	}
 
 
 	public int getChgSetSize() {
@@ -140,5 +184,23 @@ public class Record {
 	public void setChgSetSize(int chgSetSize) {
 		this.chgSetSize = chgSetSize;
 	}
+	
+	
+	//Adds to the change set size the new number of files committed together
+	public void addChgSetSize(int num) {
+		this.chgSetSize += num;
+	}
+
+
+	public String getBuggy() {
+		return buggy;
+	}
+
+
+	public void setBuggy(String buggy) {
+		this.buggy = buggy;
+	}
+	
+	
 	
 }

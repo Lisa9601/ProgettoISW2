@@ -1,6 +1,8 @@
 package main.java;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -29,14 +31,17 @@ public class SearchInfo {
     }
     
     
-    //Searches for all the tickets of type specified which have been resolved/closed 
+    //Searches for all the tickets of type (attribute) specified which have been resolved/closed 
     public List<Ticket> findTickets(String project, String attribute) throws JSONException, IOException{
     	Integer j = 0;
     	Integer i = 0;
     	Integer k = 0;
     	Integer total = 1;
+    	
+    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
+    	
     	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of ticket
-		List<String> versions = null;
+		List<String> affected = null;
 		JSONArray array = null;
 		
     	JSONReader jr = new JSONReader();
@@ -51,31 +56,31 @@ public class SearchInfo {
     				+ i.toString() + "&maxResults=" + j.toString();
          
     		JSONObject json = jr.readJsonFromUrl(url);
+    		
     		JSONArray issues = json.getJSONArray("issues");
     		total = json.getInt("total");
          
     		for (; i < total && i < j; i++) {
         	 
     			String key = issues.getJSONObject(i%1000).get("key").toString();
+    			String date = issues.getJSONObject(i%1000).getJSONObject("fields").get("created").toString();
+    			LocalDate formattedDate = LocalDate.parse(date.substring(0,10),formatter);
     			
-    			versions = new ArrayList<>();
+    			affected = new ArrayList<>();
     			
     			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("fixVersions");
-    			
-    			//If there's a fix versions it's added to the list for that ticket
+ 
     			for(k=0; k < array.length(); k++) {
-    				versions.add(array.getJSONObject(k).get("name").toString());
+    				affected.add(array.getJSONObject(k).get("name").toString());
     			}
         	 
     			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("versions");
     			
     			for(k=0; k<array.length(); k++) {		
-    				if(!versions.contains(array.getJSONObject(k).get("name").toString())) {
-    					versions.add(array.getJSONObject(k).get("name").toString());
-    				} 				
+    				affected.add(array.getJSONObject(k).get("name").toString());
     			}
     			
-    			Ticket t = new Ticket(key,versions);
+    			Ticket t = new Ticket(key,formattedDate,affected);
     			tickets.add(t);	//Adds the new ticket to the list
             
     		}
@@ -94,6 +99,8 @@ public class SearchInfo {
 	   Commit c = null;
 	   List<Commit> commits = new ArrayList<>();	//Creates a new list of commits
 	   JSONReader jr = new JSONReader();
+	   
+	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
 	   
 	   while(true) {
 		   //Only 100 commits per page are shown
@@ -121,7 +128,8 @@ public class SearchInfo {
 			   String message = commit.get("message").toString();
 			   String date = commit.getJSONObject("committer").get("date").toString();
 			   String author = commit.getJSONObject("author").get("name").toString();
-			   String formattedDate = date.substring(0,10);
+			   
+			   LocalDate formattedDate = LocalDate.parse(date.substring(0,10),formatter);
 			   
 			   c = new Commit(sha,message,formattedDate,author);
 			   
@@ -144,6 +152,8 @@ public class SearchInfo {
    public List<Release> findReleases(String project) throws JSONException, IOException{
 		
 	   List<Release> releases = new ArrayList<>();
+	   
+	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		
 	   String url = "https://issues.apache.org/jira/rest/api/2/project/" + project;
 	   JSONReader jr = new JSONReader();
@@ -152,6 +162,7 @@ public class SearchInfo {
 	   JSONArray versions = json.getJSONArray("versions");
 		
 	   String date = null;
+	   LocalDate formattedDate = null;
 	   String name = null;
 	   String id = null;
 	   Release r = null;
@@ -165,8 +176,9 @@ public class SearchInfo {
 				   id = versions.getJSONObject(i).get("id").toString();
 				
 			   date = versions.getJSONObject(i).get("releaseDate").toString();
-				
-			   r = new Release(date,name,id);
+			   formattedDate = LocalDate.parse(date,formatter);
+			   
+			   r = new Release(formattedDate,name,id);
 				
 			   releases.add(r);
 		   }
@@ -231,8 +243,9 @@ public class SearchInfo {
 		   byte[] byteArray = Base64.getMimeDecoder().decode(content);
 		   content = new String(byteArray, "UTF-8") + "\n";
 		   
+		   size = getLOC(content);
 		   
-		   newFile = new CommittedFile(filename,size,additions,changes,content);
+		   newFile = new CommittedFile(filename,size,additions,changes);
 		   
 		   System.out.println(newFile.getName());
 		   
@@ -240,6 +253,40 @@ public class SearchInfo {
 	   }
 	   
 	   return fileList; 
+   }
+   
+   
+   //Returns the number of LOC in a file
+   public int getLOC(String content) {
+   	
+   	int loc = 0;
+   	
+   	String[] lines = content.split("\n");
+   	loc = lines.length;
+   	
+   	String line = null;
+   	
+   	for(int i=0; i<lines.length; i++) {
+   		
+   		line = lines[i];
+   		
+   		if(line.contains("//")) {   			
+   			loc--;
+   		}
+   		else if(line.contains("/*")) {
+   			do {
+   				loc--;
+   				i++;
+   				line = lines[i];
+   				
+   			}
+   			while(!line.contains("*/") && i<lines.length-1);
+   			
+   		}
+   		
+   	}
+   	
+   	return loc;
    }
    
    
@@ -254,10 +301,10 @@ public class SearchInfo {
 		   
 		   for(int j=0;j<tickets.size();j++) {
 			   
-			   //If a ticket is found in the message that commit is added to the list
-			   if(message.contains(tickets.get(j).getId()+":") || message.contains(tickets.get(j).getId()+"]") || message.contains(tickets.get(j).getId()+" ") || message.contains(" "+tickets.get(j).getId())) {	
+			   //Searches for the ticket's id in the commit message
+			   if(message.contains(tickets.get(j).getId()+":") || message.contains(tickets.get(j).getId()+"]") || message.contains(tickets.get(j).getId()+" ") || message.contains(" "+tickets.get(j).getId())) {
 				   
-				   	tickets.get(j).addCommit(commits.get(i));
+				   tickets.get(j).setFixCommit(commits.get(i));				   
 				   	break;
 			   }
 			   
@@ -282,6 +329,5 @@ public class SearchInfo {
 	     });
 	   
    } 
-
    	   
 }

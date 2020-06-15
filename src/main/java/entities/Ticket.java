@@ -1,78 +1,94 @@
 package main.java.entities;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Ticket {
 
-	private String id;	
-	private List<Commit> commits = null;
-	private LocalDate resolutionDate = null;
-	private List<String> affected = null;
+	private String id;							//ticket's id
+	private LocalDate date = null;				//creation date
+	private LocalDate resolutionDate = null;	//date of the fix 
+	private List<String> affected = null;		//affected versions
+	private Commit fixCommit = null; 			//commit of the fix
+	private int numCommits;						//number of commits for the ticket
+
 	
-	
-	public Ticket(String id, List<String> affected) {
+	public Ticket(String id, LocalDate date, List<String> affected) {
 
 		this.id = id;
 		this.affected = affected;
-		commits = new ArrayList<>();
+		this.numCommits = 0;
 		
 	}
 
+	
 	public String getId() {
 		return id;
 	}
 
-
+	
 	public void setId(String id) {
 		this.id = id;
 	}
-
-	public List<Commit> getCommits() {
-		return commits;
+	
+	
+	public LocalDate getDate() {
+		return date;
 	}
 
-	public void setCommits(List<Commit> commits) {
-		this.commits = commits;
+	
+	public void setDate(LocalDate date) {
+		this.date = date;
 	}
 	
-	public void addCommit(Commit c) {
-		commits.add(c);
+	
+	public void setResolutionDate(LocalDate resolutionDate) {
+		this.resolutionDate = resolutionDate;		
 	}
+
 	
 	public LocalDate getResolutionDate() {
-	
-		if(resolutionDate == null) {
-			
-			LocalDate temp = null;
-
-			for(int i=0;i<commits.size();i++) {
-				
-				temp = commits.get(i).getDate();
-				
-				if(resolutionDate == null || resolutionDate.compareTo(commits.get(i).getDate()) < 0) {
-					resolutionDate = temp;
-				}
-				
-			}
-		}
-
-		return resolutionDate;
+		return this.resolutionDate;
 	}
 
 	
-	public int getCommitsNumber() {
-		
-		return commits.size();
-	}
-
 	public List<String> getAffected() {
 		return affected;
 	}
 
+	
 	public void setAffected(List<String> affected) {
 		this.affected = affected;
+	}
+
+	
+	public Commit getFixCommit() {
+		return fixCommit;
+	}
+
+	
+	public void setFixCommit(Commit fixCommit) {
+		
+		this.numCommits++;	//Counts the new commit
+		
+		LocalDate resolutionDate = fixCommit.getDate();
+		
+		//If there's no resolutionDate or this one is greater then the one we have the value is changed
+		if( this.resolutionDate == null || this.resolutionDate.compareTo(resolutionDate) < 0) {
+			setResolutionDate(resolutionDate);
+			this.fixCommit = fixCommit;
+		}
+	
+	}
+
+	
+	public int getNumCommits() {
+		return numCommits;
+	}
+	
+	
+	public void setNumCommits(int commits) {
+		this.numCommits = commits;
 	}
 	
 }

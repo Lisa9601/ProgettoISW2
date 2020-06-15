@@ -1,19 +1,16 @@
 package main.java.entities;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 public class Release {
 
-	private LocalDate releaseDate;
-	private String name;
-	private String id;
+	private LocalDate releaseDate;		//date of the release
+	private String name;				//name of the release
+	private String id;					//id of the release
 	
-	private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-	
-	public Release(String releaseDate, String name, String id) {
+	public Release(LocalDate releaseDate, String name, String id) {
 		
-		this.releaseDate = LocalDate.parse(releaseDate,formatter);
+		this.releaseDate = releaseDate;
 		this.name = name;
 		this.id = id;
 	
@@ -22,8 +19,8 @@ public class Release {
 	public LocalDate getReleaseDate() {
 		return releaseDate;
 	}
-	public void setReleaseDate(String releaseDate) {
-		this.releaseDate = LocalDate.parse(releaseDate,formatter);
+	public void setReleaseDate(LocalDate releaseDate) {
+		this.releaseDate = releaseDate;
 	}
 	public String getName() {
 		return name;

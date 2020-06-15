@@ -3,18 +3,16 @@ package main.java.entities;
 
 public class CommittedFile {
 
-	private String name;
-	private int size;
-	private int locAdded;
-	private int locTouched;
-	private String content;
+	private String name;		//file name
+	private int size;			//loc
+	private int locAdded;		//loc added
+	private int locTouched;		//loc touched
 	
-	public CommittedFile(String name, int size, int locAdded, int locTouched, String content) {
+	public CommittedFile(String name, int size, int locAdded, int locTouched) {
 		this.name = name;
 		this.size = size;
 		this.locAdded = locAdded;
 		this.locTouched = locTouched;
-		this.content = content;
 	}
 
 	public String getName() {
@@ -47,14 +45,6 @@ public class CommittedFile {
 
 	public void setLocTouched(int locTouched) {
 		this.locTouched = locTouched;
-	}
-
-	public String getContent() {
-		return content;
-	}
-
-	public void setContent(String content) {
-		this.content = content;
 	}
 	
 }

@@ -1,25 +1,24 @@
 package main.java.entities;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 
 public class Commit {
 
-	private String sha;
-	private String message;
-	private LocalDate date;
+	private String sha;			
+	private String message;		 
+	private LocalDate date;		
 	private String author;
-	private List<CommittedFile> files = null;
+	private List<CommittedFile> files;	//list of the files committed
 	
-	private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
-	
-	public Commit(String sha, String message, String date, String author){
+	public Commit(String sha, String message, LocalDate date, String author){
 		
 		this.sha = sha;
 		this.message = message;
-		this.date =  LocalDate.parse(date,formatter);
+		this.date =  date;
 		this.author = author;
+		this.files = null;
 		
 	}
 
@@ -43,8 +42,8 @@ public class Commit {
 		return date;
 	}
 
-	public void setDate(String date) {
-		this.date =  LocalDate.parse(date,formatter);
+	public void setDate(LocalDate date) {
+		this.date = date;
 	}
 
 	public String getAuthor() {
@@ -62,5 +61,5 @@ public class Commit {
 	public void setFiles(List<CommittedFile> files) {
 		this.files = files;
 	}
-	
+
 }
