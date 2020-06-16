@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,69 +25,156 @@ import main.java.entities.Ticket;
 public class GetData {
 
     private static Logger logger;
+    
+	private float p;			//proportional number of versions
+	private int numBugs;		//1% moving window
+	private int count;			//number of tickets
+	private int numAffected;	//sum of the affected versions
+	private int countToken;		//number of tokens
+    
 	
-    static {
+	static {
 
         System.setProperty("java.util.logging.config.file", "logging.properties");
         logger = Logger.getLogger(SearchInfo.class.getName());
     }
-	    	    
+	
     
-    //Writes the tickets info in a csv file
-    public void writeTickets(String project, List<Ticket> tickets) throws FileNotFoundException {
- 	   
-        LocalDate d = null;
-        Ticket t = null;
-        String date = null;
-        
- 	   String output = project + "tickets.csv";
- 	   PrintStream printer = new PrintStream(new File(output));
-        
-        printer.println("Id,Date,Num Commits");
-        
-        for(int i=0;i<tickets.size();i++) {
-     	   t = tickets.get(i);
-     	   d = t.getResolutionDate();
-     	   
-     	   if(d == null) {
-     		   date = "null";
-     	   }
-     	   else {
-     		   date = d.getMonthValue() +"/"+ d.getYear();
-     	   }
-
-     	   printer.println(t.getId() +","+ date +","+ t.getNumCommits());
-        }
-        
-        printer.close();
- 	   
+    public GetData() {
+		this.p = 0;
+		this.numBugs = 0;
+		this.count = 0;
+		this.numAffected = 0;
+		this.countToken = 0;
+	}
+  
+    
+    //Returns the new token to use
+    public String getToken(List<String> tokens) {
+    	
+    	this.countToken = (this.countToken+1)%tokens.size();
+   
+    	return tokens.get(this.countToken);
     }
     
     
     //Returns the number of the release if it's in the list, or -1
-    public int findRelease(List<Release> releases, String name) {
-    	int id = -1;	//id of the release
+    public int findReleaseNum(List<Release> releases, String name) {
+    	int num = -1;
     	
     	for(int i=0; i< releases.size(); i++) {
     		if(name.compareTo(releases.get(i).getName()) == 0) {
-    			id = i;
+    			num = i;
     			break;
     		}
     	}
     	
-    	return id;
+    	return num;
+    }
+
+    
+    //Returns the number of the release if it's in the list, or -1
+    public int findReleaseNum(List<Release> releases, LocalDate date) {
+    	int num = -1;
+    	
+    	for(int i=0; i< releases.size(); i++) {
+    		if(date.compareTo(releases.get(i).getReleaseDate()) < 0) {
+    			num = i;
+    			break;
+    		}
+    	}
+    	
+    	return num;
     }
     
     
+    //Computes the proportional number of versions used in proportion
+    public void computeP(int versions) {
+    	
+    	this.numAffected += versions;
+    	this.count++;
+    	
+    	if(this.count >= this.numBugs) {
+    		this.p =this.numAffected/this.count;
+        	this.numAffected = 0;
+        	this.count = 0;
+    	}
+    	
+    }
+    
+    
+    //Uses proportion on a ticket to get the affected versions
+    public void proportion(Ticket ticket, List<Release> releases) {
+    	
+    	int fixedV;
+    	int openV;
+    	int injV;
+    	
+    	fixedV = findReleaseNum(releases,ticket.getFixed().get(0)) + 1;
+    	
+    	openV = findReleaseNum(releases,ticket.getDate()) + 1;
+    	
+    	injV = Math.round(fixedV -(fixedV - openV)*this.p);
+    	
+    	//Adds all the new affected versions to the ticket
+    	for(int i=injV-1; i<openV; i++) {
+    		ticket.addAffected(releases.get(i).getName());
+    	}
+    	
+    }
+    
+    
+    //Checks if the ticket has to be considered or not
+    public void prepareTicket(Ticket ticket, List<Release> releases) {
+    	
+		//If there's more than one fixed version, we'll consider the most recent one
+		List<String> fixed = ticket.getFixed();
+		
+		while(fixed.size() > 1) {
+			if(findReleaseNum(releases,fixed.get(0))>= findReleaseNum(releases,fixed.get(1))) {
+				ticket.addAffected(fixed.get(1));	//Adds it to the affected versions
+				ticket.removeFixed(1);
+			}
+			else {
+				ticket.addAffected(fixed.get(0));
+				ticket.removeFixed(0);
+			}
+		}
+    		
+    	
+    	List<String> affected = ticket.getAffected();
+    	
+    	for(int i=0; i<affected.size();i++) {
+    		
+    		if(findReleaseNum(releases,affected.get(i)) > findReleaseNum(releases,ticket.getFixed().get(0))) {
+    			//If the affected version is greater than the fixed version we discard the data 
+    			ticket.setAffected(new ArrayList<String>());
+    			break;
+    		}
+    		
+    	}
+    	
+    	if(ticket.getAffected().size() == 0) {
+    		proportion(ticket,releases);	//If there's no affected versions use proportion
+    	}
+    	
+    	computeP(ticket.getAffected().size());
+    	
+    }
+       
+    
     //Creates a new csv file with all the data on the project
-    public void createDataset(String author, String project, String attribute, String token) throws JSONException, IOException {
+    public void createDataset(String author, String project, String attribute, List<String> tokens) throws JSONException, IOException {
 		
     	int i = 0;
     	int j = 0;
     	int k = 0;
+    	
 		List<Ticket> tickets = null;	//List of tickets from the project	
 		List<Commit> commits = null;	//List of all the commits of the project
 		List<Release> releases = null;	//List of all the releases of the project
+		
+		this.countToken = -1;
     	
 		//Searching information on the project
 		SearchInfo search = new SearchInfo();
@@ -98,7 +186,7 @@ public class GetData {
 		writeReleases(project,releases);		//Creates a csv file with release info
 		
 		logger.info("Searching for commits ...");
-		commits = search.findCommits(author,project,token);
+		commits = search.findCommits(author,project,getToken(tokens));
 		logger.info(commits.size()+" commits found!");
 		
 		writeCommits(project,commits); 		//Creates a csv file with commit info
@@ -106,6 +194,11 @@ public class GetData {
 		logger.info("Searching for tickets ...");
 		tickets = search.findTickets(project,attribute);
 		logger.info(tickets.size()+" tickets found!");
+		
+		this.p = 0;
+		this.numAffected = 0;
+		this.count = 0;
+		this.numBugs = Math.round(tickets.size()/100);
 		
 		logger.info("Matching commits to tickets ...");
 		search.matchCommits(tickets,commits);
@@ -143,7 +236,7 @@ public class GetData {
 				
 				logger.info("Searching files for commit "+counter+" ...");
 				
-				fileList = search.findCommittedFiles(author,project,token,commit);
+				fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
 				commit.setFiles(fileList);	//sets the list of files for that commit
 				
 				for(j=0;j<fileList.size();j++) {
@@ -176,57 +269,115 @@ public class GetData {
 			}	
 		
 		}
-	
-		logger.info("Creating dataset ...");
 		
 		List<String> versions = null;
 		int id;
 		
 		for(i=0; i<tickets.size(); i++) {
-
+			
+	    	if(tickets.get(i).getFixCommit() == null || tickets.get(i).getFixed().size() == 0) {
+	    		continue;	//If the ticket has no fix commit or no fixed versions it's not considered
+	    	}
+	    	
+	    	prepareTicket(tickets.get(i),releases);
+		
 			commit = tickets.get(i).getFixCommit();
 			versions = tickets.get(i).getAffected();
-			
-			if(commit == null) {
-				continue;	//If there's no commit associated with the ticket it goes to the next one
-			}
-			else if(versions == null) {
-				//use proportion 
-			}
-			else {
+			fileList = commit.getFiles();
 				
-				for(j=0; j<versions.size(); j++) {
+			for(j=0; j<versions.size(); j++) {
+				
+				id = findReleaseNum(releases,versions.get(j));	//Checks if the release is in 'releases'
+
+				if(id !=-1 && id < releaseNum) {  
 					
-					id = findRelease(releases,versions.get(j));
-					fileList = commit.getFiles();
-					//Checks if the version is between the ones beeing considered
-					if(id !=-1 && fileList != null) { // id != -1 
+					if(fileList == null) {
+						fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
+						commit.setFiles(fileList);	//sets the list of files for that commit
+					}
+					
+					
+					for(k=0; k<fileList.size(); k++) {
 						
-						for(k=0; k<fileList.size(); k++) {
+						r = maps.get(id).get(fileList.get(k).getName());
+						
+						if(r != null) {
 							
-							r = maps.get(id).get(fileList.get(k).getName());
-							
-							if(r != null) {
-								
-								r.setBuggy("Si");
-								
-							}
+							r.setBuggy("Si");
 							
 						}
 						
 					}
 					
 				}
+					
+			}
+			
+			//Fixed version
+			id = findReleaseNum(releases,tickets.get(i).getFixed().get(0));
+			
+			if(id!= -1 && id < releaseNum) {
 				
+				if(fileList == null) {
+					fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
+					commit.setFiles(fileList);	//sets the list of files for that commit
+				}
+				
+				for(k=0; k<fileList.size(); k++) {
+					
+					r = maps.get(id).get(fileList.get(k).getName());
+					
+					if(r != null) {
+						
+						r.addFix();
+						r.setBuggy("Si");
+						
+					}
+					
+				}
 			}
 			
 		}
+		
+		logger.info("Creating dataset ...");
 		
 		writeRecords(project,records);
 		
 		logger.info("DONE");
 		
     }
+    
+    
+    //Writes the tickets info in a csv file
+    public void writeTickets(String project, List<Ticket> tickets) throws FileNotFoundException {
+ 	   
+        LocalDate d = null;
+        Ticket t = null;
+        String date = null;
+        
+ 	   String output = project + "tickets.csv";
+ 	   PrintStream printer = new PrintStream(new File(output));
+        
+        printer.println("Id,Date,Num Commits");
+        
+        for(int i=0;i<tickets.size();i++) {
+     	   t = tickets.get(i);
+     	   d = t.getResolutionDate();
+     	   
+     	   if(d == null) {
+     		   date = "null";
+     	   }
+     	   else {
+     		   date = d.getMonthValue() +"/"+ d.getYear();
+     	   }
+
+     	   printer.println(t.getId() +","+ date +","+ t.getNumCommits());
+        }
+        
+        printer.close();
+ 	   
+    }
+    
     
     //Writes the commits info in a csv file
     public void writeCommits(String project, List<Commit> commits) throws FileNotFoundException {
@@ -272,7 +423,7 @@ public class GetData {
     }
     
     
-    //Writes dataset in a csv file
+    //Writes the dataset in a csv file
     public void writeRecords(String project, List<Record> records) throws FileNotFoundException {
     
     	Record r = null;
@@ -309,14 +460,21 @@ public class GetData {
 		String author = jsonConfig.getString("author");
 		String project = jsonConfig.getString("project");
 		String attribute = jsonConfig.getString("attribute");
-		String token = jsonConfig.getString("token");
+		
+		JSONArray tokenArray = jsonConfig.getJSONArray("token");
+		
+		List<String> tokens = new ArrayList<>();
+		
+		for(int i=0; i< tokenArray.length(); i++) {
+			tokens.add(tokenArray.get(i).toString());
+		}
 	   
 		reader.close();
 	   
 		//Creating new dataset for the project
 		GetData gd = new GetData();
 		
-		gd.createDataset(author,project,attribute,token);	
+		gd.createDataset(author,project,attribute,tokens);	
 		
    }
 	

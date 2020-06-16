@@ -22,8 +22,10 @@ import org.json.JSONArray;
 
 public class SearchInfo {
 	
+	
     private static Logger logger;
 	
+    
     static {
 
         System.setProperty("java.util.logging.config.file", "logging.properties");
@@ -40,7 +42,8 @@ public class SearchInfo {
     	
     	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
     	
-    	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of ticket
+    	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of tickets
+		List<String> fixed = null;
 		List<String> affected = null;
 		JSONArray array = null;
 		
@@ -66,21 +69,25 @@ public class SearchInfo {
     			String date = issues.getJSONObject(i%1000).getJSONObject("fields").get("created").toString();
     			LocalDate formattedDate = LocalDate.parse(date.substring(0,10),formatter);
     			
-    			affected = new ArrayList<>();
-    			
+    			//Fixed and affected versions
+    			fixed = new ArrayList<>();			
     			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("fixVersions");
  
     			for(k=0; k < array.length(); k++) {
-    				affected.add(array.getJSONObject(k).get("name").toString());
+    				fixed.add(array.getJSONObject(k).get("name").toString());
     			}
-        	 
+    			
+    			affected = new ArrayList<>();
     			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("versions");
     			
-    			for(k=0; k<array.length(); k++) {		
-    				affected.add(array.getJSONObject(k).get("name").toString());
+    			for(k=0; k<array.length(); k++) {
+    				//Checks if the version is already in the fixed versions list
+    				if(!fixed.contains(array.getJSONObject(k).get("name").toString())) {
+        				affected.add(array.getJSONObject(k).get("name").toString());	
+    				}
     			}
     			
-    			Ticket t = new Ticket(key,formattedDate,affected);
+    			Ticket t = new Ticket(key,formattedDate,fixed,affected);
     			tickets.add(t);	//Adds the new ticket to the list
             
     		}
@@ -195,7 +202,8 @@ public class SearchInfo {
 	   
 	   List<CommittedFile> fileList = null;
 	   JSONObject comm = null; 
-	   String sha = commit.getSha();
+	   
+	   String sha = commit.getSha();	//The commit identifier
 	   
 	   String url = "https://api.github.com/repos/"+author+"/"+project+"/commits/"+sha;
 	   
@@ -221,7 +229,7 @@ public class SearchInfo {
 		   
 		   filename = files.getJSONObject(j).get("filename").toString();
 		   
-		   //We only want java files
+		   //Only java files
 		   if(!filename.contains(".java")) {
 			   continue;
 		   }
@@ -230,6 +238,8 @@ public class SearchInfo {
 		   changes = files.getJSONObject(j).getInt("changes"); 
 		   
 		   url = files.getJSONObject(j).get("contents_url").toString();
+		   
+		   //Searches the content of the file
 		   
 		   try{
 	    	   comm = jr.readJsonFromUrl(url,token);
@@ -247,8 +257,6 @@ public class SearchInfo {
 		   
 		   newFile = new CommittedFile(filename,size,additions,changes);
 		   
-		   System.out.println(newFile.getName());
-		   
 		   fileList.add(newFile);
 	   }
 	   
@@ -258,35 +266,35 @@ public class SearchInfo {
    
    //Returns the number of LOC in a file
    public int getLOC(String content) {
-   	
-   	int loc = 0;
-   	
-   	String[] lines = content.split("\n");
-   	loc = lines.length;
-   	
-   	String line = null;
-   	
-   	for(int i=0; i<lines.length; i++) {
    		
-   		line = lines[i];
+	   int loc = 0;
+   	
+	   String[] lines = content.split("\n");
+	   loc = lines.length;
+   	
+	   String line = null;
+   	
+	   for(int i=0; i<lines.length; i++) {
+   	
+		   line = lines[i];
    		
-   		if(line.contains("//")) {   			
-   			loc--;
-   		}
-   		else if(line.contains("/*")) {
-   			do {
-   				loc--;
-   				i++;
-   				line = lines[i];
+		   if(line.contains("//")) {   			
+			   loc--;
+		   }
+		   else if(line.contains("/*")) {	
+			   do {
+				   loc--;
+				   i++;
+				   line = lines[i];
    				
-   			}
-   			while(!line.contains("*/") && i<lines.length-1);
+			   }
+			   while(!line.contains("*/") && i<lines.length-1);
    			
-   		}
-   		
-   	}
+		   }
+   			
+	   }
    	
-   	return loc;
+	   return loc;
    }
    
    
@@ -301,7 +309,7 @@ public class SearchInfo {
 		   
 		   for(int j=0;j<tickets.size();j++) {
 			   
-			   //Searches for the ticket's id in the commit message
+			   //Searches for the ticket's id in the commit's message
 			   if(message.contains(tickets.get(j).getId()+":") || message.contains(tickets.get(j).getId()+"]") || message.contains(tickets.get(j).getId()+" ") || message.contains(" "+tickets.get(j).getId())) {
 				   
 				   tickets.get(j).setFixCommit(commits.get(i));				   
@@ -312,6 +320,7 @@ public class SearchInfo {
 		   
 	   }   
 	   
+	   //Sorts the tickets
 	   Collections.sort(tickets, new Comparator<Ticket>(){
 	        //@Override
 	        public int compare(Ticket o1, Ticket o2) {
