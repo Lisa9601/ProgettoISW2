@@ -53,8 +53,8 @@ public class GetData {
     public String getToken(List<String> tokens) {
     	
     	this.countToken = (this.countToken+1)%tokens.size();
-   
     	return tokens.get(this.countToken);
+    	
     }
     
     
@@ -201,7 +201,7 @@ public class GetData {
 				
 			}
 				
-			r.setSize(file.getSize());
+			r.addSize(file.getSize());
 			r.addLocTouched(file.getLocTouched());
 			r.addLocAdded(file.getLocAdded());
 			r.addAuthor(commit.getAuthor());
@@ -244,6 +244,7 @@ public class GetData {
 		
 		LocalDate maxDate = null;
 		Commit commit = null;
+		String info = null;
 		
 		List<Ticket> tickets = null;		//List of tickets from the project	
 		List<Commit> commits = null;		//List of all the commits of the project
@@ -254,7 +255,7 @@ public class GetData {
 		this.numAffected = 0;
 		this.count = 0;
     	
-		// SEARCHING INFO ON THE PROJECT----------------------------------------------------------------------------------------------------
+		// SEARCHING INFO ON THE PROJECT
 		
 		SearchInfo search = new SearchInfo();
 		
@@ -283,13 +284,13 @@ public class GetData {
 		writeTickets(project,tickets);		//Creates a csv file with ticket info
 		
 		
-		// ASSOCIATING COMMITS AND TICKETS TO RELEASES--------------------------------------------------------------------------------------
+		// ASSOCIATING COMMITS AND TICKETS TO RELEASES
 		
 		int releaseNum = releases.size()/2;		//We consider only half of the releases
 		
 		List<Record> records = new ArrayList<>();
 		List<HashMap<String,Record>> maps = new ArrayList<>();
-		List<CommittedFile> fileList = new ArrayList<>();
+		List<CommittedFile> fileList = null;
 		
 		for(i=0; i<releaseNum; i++) {
 			
@@ -301,20 +302,18 @@ public class GetData {
 				commit = commits.get(0);	//Takes the first commit	
 				
 				counter++; 
-				logger.info(counter+"/"+(i+1)+" - searching files for commit ...");
+				info = "Searching files for commit " + counter + " release "+ (i+1); 
+				logger.info(info);
 				
 				fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
 				commit.setFiles(fileList);	//sets the list of files for that commit
 				
-				if(fileList.size() != 0) {
-					updateRecords(commit, fileList, maps, records, i);
-				}
+				updateRecords(commit, fileList, maps, records, i);
 				
 				commits.remove(0);
 			}	
 		
 		}
-		
 		
 		//Affected versions
 		List<String> versions = null;
@@ -324,7 +323,8 @@ public class GetData {
 		for(i=0; i<tickets.size(); i++) {
 			
 			counter++;
-			logger.info(counter+" - working on ticket ...");
+			info = "Working on ticket " + counter ; 
+			logger.info(info);
 			
 	    	if(tickets.get(i).getFixCommit() == null || tickets.get(i).getFixed().size() == 0) {
 	    		continue;	//If the ticket has no fix commit or no fixed versions it's not considered
@@ -343,7 +343,6 @@ public class GetData {
 				if(id !=-1 && id < releaseNum) {  
 					
 					if(fileList == null) {
-						counter++; 
 						
 						fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
 						commit.setFiles(fileList);	//sets the list of files for that commit
@@ -361,10 +360,6 @@ public class GetData {
 			if(id!= -1 && id < releaseNum) {
 				
 				if(fileList == null) {
-					
-					counter++; 
-					
-					logger.info(counter+" - searching files for commit ...");
 					
 					fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
 					commit.setFiles(fileList);	//sets the list of files for that commit

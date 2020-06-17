@@ -24,7 +24,7 @@ public class SearchInfo {
 	
 	
     private static Logger logger;
-    final static String dateFormat = "yyyy-MM-dd"; 
+    private static final String DATEFORMAT = "yyyy-MM-dd"; 
 	
     
     static {
@@ -41,7 +41,7 @@ public class SearchInfo {
     	Integer k = 0;
     	Integer total = 1;
     	
-    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat); 
+    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATEFORMAT); 
     	
     	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of tickets
 		List<String> fixed = null;
@@ -110,7 +110,7 @@ public class SearchInfo {
 	   List<Commit> commits = new ArrayList<>();	//Creates a new list of commits
 	   JSONReader jr = new JSONReader();
 	   
-	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat); 
+	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATEFORMAT); 
 	   
 	   while(true) {
 		   //Only 100 commits per page are shown
@@ -163,7 +163,7 @@ public class SearchInfo {
 		
 	   List<Release> releases = new ArrayList<>();
 	   
-	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
+	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATEFORMAT);
 		
 	   String url = "https://issues.apache.org/jira/rest/api/2/project/" + project;
 	   JSONReader jr = new JSONReader();

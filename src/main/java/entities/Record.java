@@ -62,6 +62,12 @@ public class Record {
 	public void setSize(int size) {
 		this.size = size;
 	}
+	
+	
+	//Adds the loc to the size
+	public void addSize(int loc) {
+		this.size += loc;
+	}
 
 
 	public int getLocTouched() {
