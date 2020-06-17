@@ -1,12 +1,12 @@
 package main.java;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -24,6 +24,7 @@ public class SearchInfo {
 	
 	
     private static Logger logger;
+    final String dateFormat = "yyyy-MM-dd"; 
 	
     
     static {
@@ -40,7 +41,7 @@ public class SearchInfo {
     	Integer k = 0;
     	Integer total = 1;
     	
-    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
+    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat); 
     	
     	List<Ticket> tickets = new ArrayList<>();	//Creates a new list of tickets
 		List<String> fixed = null;
@@ -65,20 +66,22 @@ public class SearchInfo {
          
     		for (; i < total && i < j; i++) {
         	 
+    			JSONObject fields = issues.getJSONObject(i%1000).getJSONObject("fields");
+    			
     			String key = issues.getJSONObject(i%1000).get("key").toString();
-    			String date = issues.getJSONObject(i%1000).getJSONObject("fields").get("created").toString();
+    			String date = fields.get("created").toString();
     			LocalDate formattedDate = LocalDate.parse(date.substring(0,10),formatter);
     			
     			//Fixed and affected versions
     			fixed = new ArrayList<>();			
-    			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("fixVersions");
+    			array = fields.getJSONArray("fixVersions");
  
     			for(k=0; k < array.length(); k++) {
     				fixed.add(array.getJSONObject(k).get("name").toString());
     			}
     			
     			affected = new ArrayList<>();
-    			array = issues.getJSONObject(i%1000).getJSONObject("fields").getJSONArray("versions");
+    			array = fields.getJSONArray("versions");
     			
     			for(k=0; k<array.length(); k++) {
     				//Checks if the version is already in the fixed versions list
@@ -107,7 +110,7 @@ public class SearchInfo {
 	   List<Commit> commits = new ArrayList<>();	//Creates a new list of commits
 	   JSONReader jr = new JSONReader();
 	   
-	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); 
+	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat); 
 	   
 	   while(true) {
 		   //Only 100 commits per page are shown
@@ -160,7 +163,7 @@ public class SearchInfo {
 		
 	   List<Release> releases = new ArrayList<>();
 	   
-	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	   DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
 		
 	   String url = "https://issues.apache.org/jira/rest/api/2/project/" + project;
 	   JSONReader jr = new JSONReader();
@@ -230,34 +233,35 @@ public class SearchInfo {
 		   filename = files.getJSONObject(j).get("filename").toString();
 		   
 		   //Only java files
-		   if(!filename.contains(".java")) {
-			   continue;
+		   if(filename.contains(".java")) {
+			   
+			   additions = files.getJSONObject(j).getInt("additions");
+			   changes = files.getJSONObject(j).getInt("changes"); 
+			   
+			   url = files.getJSONObject(j).get("contents_url").toString();
+			   
+			   //Searches the content of the file
+			   
+			   try{
+		    	   comm = jr.readJsonFromUrl(url,token);
+		       }catch(Exception e) {
+		    	   logger.severe(e.toString());
+		    	   continue;
+		       }
+			   
+			   content = comm.get("content").toString();
+			   
+			   byte[] byteArray = Base64.getMimeDecoder().decode(content);
+			   content = new String(byteArray, StandardCharsets.UTF_8) + "\n";
+			   
+			   size = getLOC(content);
+			   
+			   newFile = new CommittedFile(filename,size,additions,changes);
+			   
+			   fileList.add(newFile);
+
 		   }
 		   
-		   additions = files.getJSONObject(j).getInt("additions");
-		   changes = files.getJSONObject(j).getInt("changes"); 
-		   
-		   url = files.getJSONObject(j).get("contents_url").toString();
-		   
-		   //Searches the content of the file
-		   
-		   try{
-	    	   comm = jr.readJsonFromUrl(url,token);
-	       }catch(Exception e) {
-	    	   logger.severe(e.toString());
-	    	   break;
-	       }
-		   
-		   content = comm.get("content").toString();
-		   
-		   byte[] byteArray = Base64.getMimeDecoder().decode(content);
-		   content = new String(byteArray, "UTF-8") + "\n";
-		   
-		   size = getLOC(content);
-		   
-		   newFile = new CommittedFile(filename,size,additions,changes);
-		   
-		   fileList.add(newFile);
 	   }
 	   
 	   return fileList; 
@@ -268,8 +272,9 @@ public class SearchInfo {
    public int getLOC(String content) {
    		
 	   int loc = 0;
+	   boolean multi = false;
    	
-	   String[] lines = content.split("\n");
+	   String[] lines = content.split("\n");	//splits the file content in lines
 	   loc = lines.length;
    	
 	   String line = null;
@@ -278,18 +283,19 @@ public class SearchInfo {
    	
 		   line = lines[i];
    		
-		   if(line.contains("//")) {   			
+		   if(multi){
+			   loc--;
+			   
+			   if(line.contains("*/")) {
+				   multi = false;
+			   }
+		   }
+		   else if(line.contains("//")) {   			
 			   loc--;
 		   }
-		   else if(line.contains("/*")) {	
-			   do {
-				   loc--;
-				   i++;
-				   line = lines[i];
-   				
-			   }
-			   while(!line.contains("*/") && i<lines.length-1);
-   			
+		   else if(line.contains("/*")) {
+			   loc--;
+			   multi = true;
 		   }
    			
 	   }
@@ -321,22 +327,22 @@ public class SearchInfo {
 	   }   
 	   
 	   //Sorts the tickets
-	   Collections.sort(tickets, new Comparator<Ticket>(){
-	        //@Override
-	        public int compare(Ticket o1, Ticket o2) {
-	        	
-	        	if(o1.getResolutionDate() == null) {
-	                return (o2.getResolutionDate() == null) ? 0 : 1;
-	        	}
-	        	else if (o2.getResolutionDate() == null) {
-	        		return -1;
-	        	}
-	        	else {
-	                return o1.getResolutionDate().compareTo(o2.getResolutionDate());	
-	        	}
-	        }
-	     });
+	   Collections.sort(tickets, (Ticket o1, Ticket o2) -> sortTickets(o1,o2));
 	   
-   } 
-   	   
+   }
+   
+  
+   //Sorts the tickets
+   public int sortTickets(Ticket o1, Ticket o2) {
+	   if(o1.getResolutionDate() == null) {
+		   return (o2.getResolutionDate() == null) ? 0 : 1;
+	   }
+	   else if (o2.getResolutionDate() == null) {
+		   return -1;
+	   }
+	   else {
+		   return o1.getResolutionDate().compareTo(o2.getResolutionDate());	
+	   }
+   }
+   
 }

@@ -109,11 +109,11 @@ public class Ticket {
 		
 		this.numCommits++;	//Counts the new commit
 		
-		LocalDate resolutionDate = fixCommit.getDate();
+		LocalDate newDate = fixCommit.getDate();
 		
 		//If there's no resolutionDate or this one is greater then the one we have the value is changed
-		if( this.resolutionDate == null || this.resolutionDate.compareTo(resolutionDate) < 0) {
-			setResolutionDate(resolutionDate);
+		if( this.resolutionDate == null || this.resolutionDate.compareTo(newDate) < 0) {
+			setResolutionDate(newDate);
 			this.fixCommit = fixCommit;
 		}
 	
