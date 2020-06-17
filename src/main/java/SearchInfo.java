@@ -24,7 +24,7 @@ public class SearchInfo {
 	
 	
     private static Logger logger;
-    final String dateFormat = "yyyy-MM-dd"; 
+    final static String dateFormat = "yyyy-MM-dd"; 
 	
     
     static {

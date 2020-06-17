@@ -1,8 +1,8 @@
 {
 
-	"author":"apache",
-	"project":"BOOKKEEPER",
-	"attribute":"Bug",
-	"token":["475ffbd3d1e83079733ca69ea58d128b50d70994","1c58e448506233e5b9b228f713383df7f126827b"]
+	"author":"author of the project",
+	"project":"name of the project you wish to analyze",
+	"attribute":"attribute of the project to search, e.g. 'Bug', 'Task' ... If the attribute has spaces replace them with '%20' like 'New%20Feature'",
+	"token":["your github token 1","your github token 2"]
 
 }
