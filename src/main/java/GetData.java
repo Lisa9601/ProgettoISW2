@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -213,6 +214,52 @@ public class GetData {
     }
     
     
+    //Updates the bugginess of the files 
+    public void updateBugginess(Ticket t, List<Release> releases, int releaseNum, List<HashMap<String,Record>> maps, String author, 
+    		String project, List<String> tokens) throws UnsupportedEncodingException {
+    	
+    	int id;
+    	List<CommittedFile> fileList = null;
+    	List<String> versions = t.getAffected();
+    	Commit commit = t.getFixCommit();
+    	
+    	if(commit == null || t.getFixed().size() == 0) {
+    		return;	//If the ticket has no fix commit or no fixed versions it's not considered
+    	}
+    	
+    	prepareTicket(t,releases);
+    	
+		for(int j=0; j<versions.size(); j++) {
+			
+			id = findReleaseNum(releases,versions.get(j));	//Checks if the release is in 'releases'
+
+			if(id !=-1 && id < releaseNum) {  
+
+				fileList = getCommitFiles(commit,author,project,tokens);
+				
+				updateVersion(id,fileList,maps,false);
+				
+			}
+				
+		}
+		
+		//Fixed version
+		id = findReleaseNum(releases,t.getFixed().get(0));
+		
+		if(id!= -1 && id < releaseNum) {
+			
+			fileList = getCommitFiles(commit,author,project,tokens);
+
+			
+			updateVersion(id,fileList,maps,true);
+			
+		}
+		
+    	
+    	
+    }
+    
+    
     //Updates the records with the bugginess and the number of fix
     public void updateVersion(int id, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, boolean fix) {
     	Record r = null;
@@ -235,11 +282,23 @@ public class GetData {
     }
     
     
+    public List<CommittedFile> getCommitFiles(Commit commit, String author, String project, List<String> tokens) throws UnsupportedEncodingException {
+		List<CommittedFile> files = commit.getFiles();
+    	
+    	if(files == null) {
+        	SearchInfo search = new SearchInfo();
+			files = search.findCommittedFiles(author, project, getToken(tokens), commit);
+			commit.setFiles(files);	//Sets the files for the commit
+		}
+    	
+    	return files;
+    }
+    
+    
     //Creates a new csv file with all the data on the project
     public void createDataset(String author, String project, String attribute, List<String> tokens) throws JSONException, IOException {
 		
     	int i = 0;
-    	int j = 0;
 		int counter = 0;	//Used to keep track of the commits beeing processed
 		
 		LocalDate maxDate = null;
@@ -305,8 +364,7 @@ public class GetData {
 				info = "Searching files for commit " + counter + " release "+ (i+1); 
 				logger.info(info);
 				
-				fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
-				commit.setFiles(fileList);	//sets the list of files for that commit
+				fileList = getCommitFiles(commit,author,project,tokens);
 				
 				updateRecords(commit, fileList, maps, records, i);
 				
@@ -315,9 +373,7 @@ public class GetData {
 		
 		}
 		
-		//Affected versions
-		List<String> versions = null;
-		int id;
+		
 		counter = 0;
 		
 		for(i=0; i<tickets.size(); i++) {
@@ -326,48 +382,7 @@ public class GetData {
 			info = "Working on ticket " + counter ; 
 			logger.info(info);
 			
-	    	if(tickets.get(i).getFixCommit() == null || tickets.get(i).getFixed().size() == 0) {
-	    		continue;	//If the ticket has no fix commit or no fixed versions it's not considered
-	    	}
-	    	
-	    	prepareTicket(tickets.get(i),releases);
-		
-			commit = tickets.get(i).getFixCommit();
-			versions = tickets.get(i).getAffected();
-			fileList = commit.getFiles();
-				
-			for(j=0; j<versions.size(); j++) {
-				
-				id = findReleaseNum(releases,versions.get(j));	//Checks if the release is in 'releases'
-
-				if(id !=-1 && id < releaseNum) {  
-					
-					if(fileList == null) {
-						
-						fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
-						commit.setFiles(fileList);	//sets the list of files for that commit
-					}
-					
-					updateVersion(id,fileList,maps,false);
-					
-				}
-					
-			}
-			
-			//Fixed version
-			id = findReleaseNum(releases,tickets.get(i).getFixed().get(0));
-			
-			if(id!= -1 && id < releaseNum) {
-				
-				if(fileList == null) {
-					
-					fileList = search.findCommittedFiles(author,project,getToken(tokens),commit);
-					commit.setFiles(fileList);	//sets the list of files for that commit
-				}
-				
-				updateVersion(id,fileList,maps,true);
-				
-			}
+			updateBugginess(tickets.get(i), releases, releaseNum, maps, author, project, tokens);
 			
 		}
 		
