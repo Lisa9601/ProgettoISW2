@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Record {
 
-	private Integer release;			//release number
+	private Integer release;		//release number
 	private String file;			//file name
 	private int size;				//loc
 	private int locTouched;			//loc touched
@@ -40,7 +40,7 @@ public class Record {
 
 
 	public void setRelease(int release) {
-		this.release = new Integer(release);
+		this.release = release;
 	}
 
 

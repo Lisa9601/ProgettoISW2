@@ -355,8 +355,6 @@ public class GetData {
 		int releaseNum = releases.size()/2;		//We consider only half of the releases
 		releases = releases.subList(0,releaseNum);		
 		
-		System.out.println(releases);
-		
 		List<Record> records = new ArrayList<>();
 		List<HashMap<String,Record>> maps = new ArrayList<>();
 		List<CommittedFile> fileList = null;
