@@ -62,12 +62,6 @@ public class Record {
 	public void setSize(int size) {
 		this.size = size;
 	}
-	
-	
-	//Adds the loc to the size
-	public void addSize(int loc) {
-		this.size += loc;
-	}
 
 
 	public int getLocTouched() {
@@ -119,8 +113,8 @@ public class Record {
 
 
 	//Returns the average number of loc added
-	public int getAvgLocAdded() {
-		return this.locAdded/this.nr;
+	public float getAvgLocAdded() {
+		return (float)this.locAdded/this.nr;
 	}
 	
 

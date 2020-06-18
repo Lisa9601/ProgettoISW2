@@ -182,32 +182,32 @@ public class GetData {
     
     
     //Updates all records releated to the files committed in the commit 
-    public void updateRecords(Commit commit, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, List<Record> records, int i) {
+    public void updateRecords(Commit commit, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, List<Record> records, int id) {
     	CommittedFile file = null;
     	Record r = null;
 		
-		for(int j=0; j<fileList.size(); j++) {
+		for(int i=0; i<fileList.size(); i++) {
 			
-			file = fileList.get(j);
+			file = fileList.get(i);
 			
-			r = maps.get(i).get(file.getName());
+			r = maps.get(id).get(file.getName());
 			
 			//If it's a new file it's added to the list and the map
 			if(r == null) {
 				
-				r = new Record(i+1,file.getName());
+				r = new Record(id+1,file.getName());
 				
-				maps.get(i).put(file.getName(),r);
+				maps.get(id).put(file.getName(),r);
 				records.add(r);
 				
 			}
 				
-			r.addSize(file.getSize());
+			r.setSize(file.getSize());
 			r.addLocTouched(file.getLocTouched());
 			r.addLocAdded(file.getLocAdded());
 			r.addAuthor(commit.getAuthor());
 			r.addRevision();
-			r.addChgSetSize(fileList.size()-1);				
+			r.addChgSetSize(fileList.size()-1);	
 			
 		}
     	
@@ -215,8 +215,8 @@ public class GetData {
     
     
     //Updates the bugginess of the files 
-    public void updateBugginess(Ticket t, List<Release> releases, int releaseNum, List<HashMap<String,Record>> maps, String author, 
-    		String project, List<String> tokens) throws UnsupportedEncodingException {
+    public void updateBugginess(Ticket t, List<Release> releases, int releaseNum, List<HashMap<String,Record>> maps, List<Record> records,
+    		String author, String project, List<String> tokens) throws UnsupportedEncodingException {
     	
     	int id;
     	List<CommittedFile> fileList = null;
@@ -237,7 +237,7 @@ public class GetData {
 
 				fileList = getCommitFiles(commit,author,project,tokens);
 				
-				updateVersion(id,fileList,maps,false);
+				updateVersion(id,fileList,maps,records,false);
 				
 			}
 				
@@ -251,7 +251,7 @@ public class GetData {
 			fileList = getCommitFiles(commit,author,project,tokens);
 
 			
-			updateVersion(id,fileList,maps,true);
+			updateVersion(id,fileList,maps,records,true);
 			
 		}
 		
@@ -261,22 +261,28 @@ public class GetData {
     
     
     //Updates the records with the bugginess and the number of fix
-    public void updateVersion(int id, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, boolean fix) {
+    public void updateVersion(int id, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, List<Record> records, boolean fix) {
     	Record r = null;
+    	CommittedFile file = null;
 		
-		for(int k=0; k<fileList.size(); k++) {
+		for(int i=0; i<fileList.size(); i++) {
 			
-			r = maps.get(id).get(fileList.get(k).getName());
+			file = fileList.get(i);
+			r = maps.get(id).get(file.getName());
 			
-			if(r != null) {
+			if(r == null) {
+				r = new Record(id+1,file.getName());
 				
-				r.setBuggy("Yes");
-				
-				if(fix) {
-					r.addFix();
-				}	
-				
+				maps.get(id).put(file.getName(),r);
+				records.add(r);
 			}
+			
+			r.setBuggy("Yes");
+			
+			if(fix) {
+				r.addFix();
+			}
+			
 		}
 		
     }
@@ -382,7 +388,7 @@ public class GetData {
 			info = "Working on ticket " + counter ; 
 			logger.info(info);
 			
-			updateBugginess(tickets.get(i), releases, releaseNum, maps, author, project, tokens);
+			updateBugginess(tickets.get(i), releases, releaseNum, maps, records, author, project, tokens);
 			
 		}
 		
@@ -405,7 +411,7 @@ public class GetData {
  	   	String output = project + "tickets.csv";
  	   	PrintStream printer = new PrintStream(new File(output));
         
- 	   	printer.println("Id,Date,Num Commits");
+ 	   	printer.println("Id;Date;Num Commits");
         
         for(int i=0;i<tickets.size();i++) {
         	t = tickets.get(i);
@@ -418,7 +424,7 @@ public class GetData {
      	   		date = d.getMonthValue() +"/"+ d.getYear();
      	   	}
 
-     	   	printer.println(t.getId() +","+ date +","+ t.getNumCommits());
+     	   	printer.println(t.getId() +";"+ date +";"+ t.getNumCommits());
         }
         
         printer.close();
@@ -434,12 +440,14 @@ public class GetData {
  	   	String output = project + "commits.csv";
  	   
  	   	PrintStream printer = new PrintStream(new File(output));
-        
+       
+ 	   printer.println("Sha;Date");
+ 	   	
         for(int i=0;i<commits.size();i++) {
      	   	c = commits.get(i);
      	   	cd = c.getDate();
 
-     	   	printer.println(cd.getMonthValue() +"/"+ cd.getYear());
+     	   	printer.println(c.getSha()+";"+cd.getMonthValue() +"/"+ cd.getYear());
         }
         
         printer.close();
@@ -455,12 +463,12 @@ public class GetData {
  		   
  	   PrintStream printer = new PrintStream(new File(output));
  			   
- 	   printer.println("Index,Version ID,Version Name,Date");
+ 	   printer.println("Index;Version ID;Version Name;Date");
  	
  	   for (int i = 0; i < releases.size(); i++) {
  		   Integer index = i + 1;
  		   r = releases.get(i);
- 		   printer.println(index.toString() + "," + r.getId() + "," + r.getName() + "," + r.getReleaseDate());
+ 		   printer.println(index.toString() + ";" + r.getId() + ";" + r.getName() + ";" + r.getReleaseDate());
  	
  	   }
  	
@@ -477,13 +485,13 @@ public class GetData {
     	
     	PrintStream printer = new PrintStream(new File(output));
     	
-    	printer.println("Release,File,Size,LocTouched,LocAdded,MaxLocAdded,AvgLocAdded,Nauth,Nfix,Nr,ChgSetSize,Buggy");
+    	printer.println("Release;File;Size;LocTouched;LocAdded;MaxLocAdded;AvgLocAdded;Nauth;Nfix;Nr;ChgSetSize;Buggy");
 	   		
     	for (int i = 0; i < records.size(); i++) {
 	   		r = records.get(i);
-	   		printer.println(r.getRelease()+","+r.getFile()+","+r.getSize()+","+r.getLocTouched()+","+r.getLocAdded()+","+
-	   		r.getMaxLocAdded()+","+r.getAvgLocAdded()+","+r.getNauth()+","+r.getNfix()+","+r.getNr()+","+r.getChgSetSize()+
-	   		","+r.getBuggy());
+	   		printer.println(r.getRelease()+";"+r.getFile()+";"+r.getSize()+";"+r.getLocTouched()+";"+r.getLocAdded()+";"+
+	   		r.getMaxLocAdded()+";"+String.format("%.2f", r.getAvgLocAdded())+";"+r.getNauth()+";"+r.getNfix()+";"+r.getNr()+";"+r.getChgSetSize()+
+	   		";"+r.getBuggy());
     	}
     	
     	printer.close();
