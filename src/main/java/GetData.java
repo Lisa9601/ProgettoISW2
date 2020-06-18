@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
@@ -215,7 +216,7 @@ public class GetData {
     
     
     //Updates the bugginess of the files 
-    public void updateBugginess(Ticket t, List<Release> releases, int releaseNum, List<HashMap<String,Record>> maps, List<Record> records,
+    public void updateBugginess(Ticket t, List<Release> releases, List<HashMap<String,Record>> maps, List<Record> records,
     		String author, String project, List<String> tokens) throws UnsupportedEncodingException {
     	
     	int id;
@@ -233,7 +234,7 @@ public class GetData {
 			
 			id = findReleaseNum(releases,versions.get(j));	//Checks if the release is in 'releases'
 
-			if(id !=-1 && id < releaseNum) {  
+			if(id !=-1 && id < releases.size()) {  
 
 				fileList = getCommitFiles(commit,author,project,tokens);
 				
@@ -246,7 +247,7 @@ public class GetData {
 		//Fixed version
 		id = findReleaseNum(releases,t.getFixed().get(0));
 		
-		if(id!= -1 && id < releaseNum) {
+		if(id!= -1 && id < releases.size()) {
 			
 			fileList = getCommitFiles(commit,author,project,tokens);
 
@@ -352,12 +353,15 @@ public class GetData {
 		// ASSOCIATING COMMITS AND TICKETS TO RELEASES
 		
 		int releaseNum = releases.size()/2;		//We consider only half of the releases
+		releases = releases.subList(0,releaseNum);		
+		
+		System.out.println(releases);
 		
 		List<Record> records = new ArrayList<>();
 		List<HashMap<String,Record>> maps = new ArrayList<>();
 		List<CommittedFile> fileList = null;
 		
-		for(i=0; i<releaseNum; i++) {
+		for(i=0; i<releases.size(); i++) {
 			
 			maxDate = releases.get(i).getReleaseDate();
 			maps.add(new HashMap<String,Record>());	//Creates a new hashmap for the release
@@ -388,11 +392,14 @@ public class GetData {
 			info = "Working on ticket " + counter ; 
 			logger.info(info);
 			
-			updateBugginess(tickets.get(i), releases, releaseNum, maps, records, author, project, tokens);
+			updateBugginess(tickets.get(i), releases, maps, records, author, project, tokens);
 			
 		}
 		
 		logger.info("Creating dataset ...");
+		
+		//Sorts the records
+		Collections.sort(records, (Record o1, Record o2) -> o1.getRelease().compareTo(o2.getRelease()));
 		
 		writeRecords(project,records);
 		

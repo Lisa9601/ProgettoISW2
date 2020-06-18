@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Record {
 
-	private int release;			//release number
+	private Integer release;			//release number
 	private String file;			//file name
 	private int size;				//loc
 	private int locTouched;			//loc touched
@@ -34,13 +34,13 @@ public class Record {
 	}
 	
 
-	public int getRelease() {
+	public Integer getRelease() {
 		return release;
 	}
 
 
 	public void setRelease(int release) {
-		this.release = release;
+		this.release = new Integer(release);
 	}
 
 
@@ -114,7 +114,16 @@ public class Record {
 
 	//Returns the average number of loc added
 	public float getAvgLocAdded() {
-		return (float)this.locAdded/this.nr;
+		
+		float avg;
+		
+		if(this.locAdded == 0) {
+			avg = 0; 
+		}
+		else {
+			avg = (float)this.locAdded/this.nr;
+		}
+		return avg;
 	}
 	
 
