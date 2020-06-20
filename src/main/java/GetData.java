@@ -115,7 +115,6 @@ public class GetData {
     	fixedV = findReleaseNum(releases,ticket.getFixed().get(0)) + 1;
     	openV = findReleaseNum(releases,ticket.getDate()) + 1;
     	
-    	
     	//If the fixed version isn't found it's set equal to the opening version
     	if(fixedV == 0) {
     		fixedV = openV;
@@ -128,15 +127,20 @@ public class GetData {
     		openV = temp;
     	}
     	
-    	injV = Math.round(fixedV -(fixedV - openV)*this.p);
+    	injV = (int) Math.floor(fixedV -(fixedV - openV)*this.p);
     	
     	//Checks if the value is negative
     	if(injV <= 0) {
     		injV = 1;
     	}
     	
+    	//Checks if the value is greater than the opening version
+    	if(injV > openV) {
+    		injV = openV;
+    	}
+    	
     	//Adds all the new affected versions to the ticket
-    	for(int i=injV-1; i<fixedV; i++) {
+    	for(int i=injV-1; i<fixedV-1; i++) {
     		ticket.addAffected(releases.get(i).getName());
     	}
     	
@@ -176,8 +180,8 @@ public class GetData {
     	if(ticket.getAffected().size() == 0) {
     		proportion(ticket,releases);	//If there's no affected versions use proportion
     	}
-    	
-    	computeP(ticket.getAffected().size());
+
+        computeP(ticket.getAffected().size());	
     	
     }
     
@@ -216,8 +220,8 @@ public class GetData {
     
     
     //Updates the bugginess of the files 
-    public void updateBugginess(Ticket t, List<Release> releases, List<HashMap<String,Record>> maps, List<Record> records,
-    		String author, String project, List<String> tokens) throws UnsupportedEncodingException {
+    public void updateBugginess(Ticket t, List<Release> releases, int releaseNum, List<HashMap<String,Record>> maps, String author, 
+    		String project, List<String> tokens) throws UnsupportedEncodingException {
     	
     	int id;
     	List<CommittedFile> fileList = null;
@@ -234,11 +238,11 @@ public class GetData {
 			
 			id = findReleaseNum(releases,versions.get(j));	//Checks if the release is in 'releases'
 
-			if(id !=-1 && id < releases.size()) {  
+			if(id !=-1 && id < releaseNum) {  
 
 				fileList = getCommitFiles(commit,author,project,tokens);
 				
-				updateVersion(id,fileList,maps,records,false);
+				updateVersion(id,fileList,maps,false);
 				
 			}
 				
@@ -247,12 +251,12 @@ public class GetData {
 		//Fixed version
 		id = findReleaseNum(releases,t.getFixed().get(0));
 		
-		if(id!= -1 && id < releases.size()) {
+		if(id!= -1 && id < releaseNum) {
 			
 			fileList = getCommitFiles(commit,author,project,tokens);
 
 			
-			updateVersion(id,fileList,maps,records,true);
+			updateVersion(id,fileList,maps,true);
 			
 		}
 		
@@ -262,7 +266,7 @@ public class GetData {
     
     
     //Updates the records with the bugginess and the number of fix
-    public void updateVersion(int id, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, List<Record> records, boolean fix) {
+    public void updateVersion(int id, List<CommittedFile> fileList, List<HashMap<String,Record>> maps, boolean fix) {
     	Record r = null;
     	CommittedFile file = null;
 		
@@ -271,17 +275,13 @@ public class GetData {
 			file = fileList.get(i);
 			r = maps.get(id).get(file.getName());
 			
-			if(r == null) {
-				r = new Record(id+1,file.getName());
-				
-				maps.get(id).put(file.getName(),r);
-				records.add(r);
-			}
+			if(r != null) {
+				r.setBuggy("Yes");
 			
-			r.setBuggy("Yes");
+				if(fix) {
+					r.addFix();
+				}
 			
-			if(fix) {
-				r.addFix();
 			}
 			
 		}
@@ -353,13 +353,12 @@ public class GetData {
 		// ASSOCIATING COMMITS AND TICKETS TO RELEASES
 		
 		int releaseNum = releases.size()/2;		//We consider only half of the releases
-		releases = releases.subList(0,releaseNum);		
 		
 		List<Record> records = new ArrayList<>();
 		List<HashMap<String,Record>> maps = new ArrayList<>();
 		List<CommittedFile> fileList = null;
 		
-		for(i=0; i<releases.size(); i++) {
+		for(i=0; i<releaseNum; i++) {
 			
 			maxDate = releases.get(i).getReleaseDate();
 			maps.add(new HashMap<String,Record>());	//Creates a new hashmap for the release
@@ -389,8 +388,8 @@ public class GetData {
 			counter++;
 			info = "Working on ticket " + counter ; 
 			logger.info(info);
-			
-			updateBugginess(tickets.get(i), releases, maps, records, author, project, tokens);
+
+			updateBugginess(tickets.get(i), releases, releaseNum, maps, author, project, tokens);
 			
 		}
 		
